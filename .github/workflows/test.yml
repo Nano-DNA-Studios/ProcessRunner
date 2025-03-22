@@ -32,4 +32,3 @@ jobs:
     steps:
       - name: Run Unit Tests using NUnit
         run: dotnet test --no-restore --logger "console;verbosity=detailed" --filter "TestCategory!=Integration"
-
