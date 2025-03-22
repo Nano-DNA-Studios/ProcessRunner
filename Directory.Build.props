@@ -12,7 +12,7 @@
 	<!-- Repo Info -->
 	<PropertyGroup>
 		<RepositoryType>git</RepositoryType>
-		<RepositoryUrl>https://github.com/Nano-DNA-Studios/NanoDNA.CommandRunner</RepositoryUrl>
+		<RepositoryUrl>https://github.com/Nano-DNA-Studios/NanoDNA.ProcessRunner</RepositoryUrl>
 	</PropertyGroup>
 
 	<!-- Project Configuration Metadata -->

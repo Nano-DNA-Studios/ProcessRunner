@@ -2,7 +2,7 @@
 
 	<!-- Building / Publishing Metadata -->
 	<PropertyGroup>
-		<RootNamespace>NanoDNA.CommandRunner</RootNamespace>
+		<RootNamespace>NanoDNA.ProcessRunner</RootNamespace>
 		<ProductName>$(RootNamespace)</ProductName>
 		<AssemblyName>$(RootNamespace)</AssemblyName>
 		<OutputType>Library</OutputType>
