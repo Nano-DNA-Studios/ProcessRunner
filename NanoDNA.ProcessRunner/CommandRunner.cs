@@ -14,6 +14,11 @@ namespace NanoDNA.ProcessRunner
         /// <summary>
         /// Specifies the Set of Values to use when Starting a Process.
         /// </summary>
+        public ProcessStartInfo ProcessStartInfo { get => _processStartInfo; }
+
+        /// <summary>
+        /// Specifies the Set of Values to use when Starting a Process.
+        /// </summary>
         private ProcessStartInfo _processStartInfo { get; set; }
 
         /// <summary>
@@ -22,12 +27,12 @@ namespace NanoDNA.ProcessRunner
         public ProcessApplication Application { get; set; }
 
         /// <summary>
-        /// Toggles the Standard Output Redirect to the Console.
+        /// Toggles the Standard Output Redirect and Stores in the <see cref="StandardOutput"/> Property.
         /// </summary>
         private bool _stdOutputRedirect { get; set; }
 
         /// <summary>
-        /// Toggles the Standard Error Redirect to the Console.
+        /// Toggles the Standard Error Redirect and Stores in the <see cref="StandardError"/> Property.
         /// </summary>
         private bool _stdErrorRedirect { get; set; }
 
@@ -60,9 +65,9 @@ namespace NanoDNA.ProcessRunner
         /// Initializes a new Instance of <see cref="CommandRunner"/> using <see cref="ProcessApplication"/>.
         /// </summary>
         /// <param name="application">Process Application the Command will run through.</param>
-        /// <param name="stdOutRedirect">Redirect the Standard Output to the Console.</param>
-        /// <param name="stdErrRedirect">Redirect the Standard Error to the Console.</param>
-        public CommandRunner(ProcessApplication application, bool stdOutRedirect = false, bool stdErrRedirect = false)
+        /// <param name="stdOutRedirect">Redirect the Standard Output and Store in the <see cref="StandardOutput"/> Property.</param>
+        /// <param name="stdErrRedirect">Redirect the Standard Error and Store in the <see cref="StandardError"/> Property</param>
+        public CommandRunner(ProcessApplication application, bool stdOutRedirect = true, bool stdErrRedirect = true)
         {
             Application = application;
             _stdOutputRedirect = stdOutRedirect;
@@ -76,33 +81,32 @@ namespace NanoDNA.ProcessRunner
             _processStartInfo.RedirectStandardError = _stdErrorRedirect;
             _processStartInfo.CreateNoWindow = true;
             _processStartInfo.UseShellExecute = false;
-            
         }
 
         /// <summary>
         /// Initializes a new Instance of <see cref="CommandRunner"/> using the String Name of the <see cref="ProcessApplication"/>.
         /// </summary>
-        /// <param name="application">String Name of the Process Application Enum the Command will run through.</param>
-        /// <param name="stdOutRedirect">Redirect the Standard Output to the Console.</param>
-        /// <param name="stdErrRedirect">Redirect the Standard Error to the Console.</param>
-        public CommandRunner(string application, bool stdOutRedirect = false, bool stdErrRedirect = false)
+        /// <param name="applicationName">String Name of the Process Application Enum the Command will run through.</param>
+        /// <param name="stdOutRedirect">Redirect the Standard Output and Store in the <see cref="StandardOutput"/> Property.</param>
+        /// <param name="stdErrRedirect">Redirect the Standard Error and Store in the <see cref="StandardError"/> Property</param>
+        public CommandRunner(string applicationName, bool stdOutRedirect = true, bool stdErrRedirect = true)
         {
             _processStartInfo = new ProcessStartInfo();
 
-            if (Enum.TryParse(application, out ProcessApplication app))
+            if (Enum.TryParse(applicationName, out ProcessApplication app))
             {
                 Application = app;
                 _processStartInfo.FileName = GetApplicationPath(app);
             }
             else
-                SetOSDefaultApp();
+                throw new ArgumentException($"Invalid Process Application: {applicationName}");
 
             _stdOutputRedirect = stdOutRedirect;
             _stdErrorRedirect = stdErrRedirect;
             _standardOutput = new List<string>();
             _standardError = new List<string>();
 
-            _processStartInfo.FileName = application;
+            _processStartInfo.FileName = applicationName;
             _processStartInfo.RedirectStandardOutput = _stdOutputRedirect;
             _processStartInfo.RedirectStandardError = _stdErrorRedirect;
             _processStartInfo.CreateNoWindow = true;
@@ -112,9 +116,9 @@ namespace NanoDNA.ProcessRunner
         /// <summary>
         /// Initializes a new Instance of <see cref="CommandRunner"/>. Uses the default Process Application based on the devices Operating System.
         /// </summary>
-        /// <param name="stdOutRedirect">Redirect the Standard Output to the Console.</param>
-        /// <param name="stdErrRedirect">Redirect the Standard Error to the Console.</param>
-        public CommandRunner(bool stdOutRedirect = false, bool stdErrRedirect = false)
+        /// <param name="stdOutRedirect">Redirect the Standard Output and Store in the <see cref="StandardOutput"/> Property.</param>
+        /// <param name="stdErrRedirect">Redirect the Standard Error and Store in the <see cref="StandardError"/> Property</param>
+        public CommandRunner(bool stdOutRedirect = true, bool stdErrRedirect = true)
         {
             _stdOutputRedirect = stdOutRedirect;
             _stdErrorRedirect = stdErrRedirect;
@@ -128,6 +132,20 @@ namespace NanoDNA.ProcessRunner
             _processStartInfo.UseShellExecute = false;
 
             SetOSDefaultApp();
+        }
+
+        /// <summary>
+        /// Initializes a new Instance of <see cref="CommandRunner"/>. Uses the <see cref="System.Diagnostics.ProcessStartInfo"/> provided by the User.
+        /// </summary>
+        /// <param name="processStartInfo">Process Info defined by the User</param>
+        public CommandRunner (ProcessStartInfo processStartInfo)
+        {
+            _processStartInfo = processStartInfo;
+
+            _stdOutputRedirect = processStartInfo.RedirectStandardOutput;
+            _stdErrorRedirect = processStartInfo.RedirectStandardError;
+            _standardOutput = new List<string>();
+            _standardError = new List<string>();
         }
 
         /// <summary>
@@ -263,7 +281,9 @@ namespace NanoDNA.ProcessRunner
         /// Runs a Command through the <see cref="ProcessApplication"/>.
         /// </summary>
         /// <param name="command">The Command to be run through the <see cref="ProcessApplication"/>.</param>
-        public void RunCommand(string command)
+        /// <param name="displaySTDOutput">Display the Standard Output in the Console.</param>
+        /// <param name="displaySTDError">Display the Standard Error in the Console.</param>
+        public void RunCommand(string command, bool displaySTDOutput = false, bool displaySTDError = false)
         {
             _processStartInfo.Arguments = GetApplicationArguments(Application, command);
 
@@ -272,25 +292,35 @@ namespace NanoDNA.ProcessRunner
                 process.StartInfo = _processStartInfo;
                 process.Start();
 
-                while (!process.StandardOutput.EndOfStream || !process.StandardError.EndOfStream)
+                if (_stdOutputRedirect)
                 {
-                    string stdOutLine = process.StandardOutput.ReadLine();
-                    string stdErrLine = process.StandardError.ReadLine();
-
-                    if (stdOutLine != null)
+                    while (!process.StandardOutput.EndOfStream)
                     {
-                        _standardOutput.Add(stdOutLine);
+                        string line = process.StandardOutput.ReadLine();
 
-                        if (_stdOutputRedirect)
-                            Console.WriteLine(stdOutLine);
+                        if (line == null)
+                            continue;
+
+                        _standardOutput.Add(line);
+
+                        if (displaySTDOutput)
+                            Console.WriteLine(line);
                     }
+                }
 
-                    if (stdErrLine != null)
+                if (_stdErrorRedirect)
+                {
+                    while (!process.StandardError.EndOfStream)
                     {
-                        _standardError.Add(stdErrLine);
+                        string line = process.StandardError.ReadLine();
 
-                        if (_stdErrorRedirect)
-                            Console.WriteLine(stdErrLine);
+                        if (line == null)
+                            continue;
+
+                        _standardError.Add(line);
+
+                        if (displaySTDError)
+                            Console.WriteLine(line);
                     }
                 }
 
@@ -298,7 +328,7 @@ namespace NanoDNA.ProcessRunner
 
                 if (process.ExitCode != 0)
                 {
-                    if (_stdErrorRedirect)
+                    if (displaySTDError)
                         Console.WriteLine($"Runner Exited with an Error, Exit Code : {process.ExitCode}");
                 }
             }
@@ -308,45 +338,53 @@ namespace NanoDNA.ProcessRunner
         /// Runs a Command through the <see cref="ProcessApplication"/> Asynchronously.
         /// </summary>
         /// <param name="command">The Command to be run through the <see cref="ProcessApplication"/>.</param>
-        public async Task RunCommandAsync(string command)
+        /// <param name="displaySTDOutput">Display the Standard Output in the Console.</param>
+        /// <param name="displaySTDError">Display the Standard Error in the Console.</param>
+        public async Task RunCommandAsync(string command, bool displaySTDOutput = false, bool displaySTDError = false)
         {
             _processStartInfo.Arguments = GetApplicationArguments(Application, command);
             _standardOutput.Clear();
             _standardError.Clear();
 
-            using (var process = new Process())
+            using (Process process = new Process())
             {
                 process.StartInfo = _processStartInfo;
                 process.Start();
 
-                var outputTask = Task.Run(async () =>
+                Task outputTask = Task.Run(async () =>
                 {
+                    if (!_stdOutputRedirect)
+                        return;
+
                     while (!process.StandardOutput.EndOfStream)
                     {
-                        var line = await process.StandardOutput.ReadLineAsync();
+                        string line = await process.StandardOutput.ReadLineAsync();
 
                         if (line == null)
                             continue;
 
                         _standardOutput.Add(line);
 
-                        if (_stdOutputRedirect)
+                        if (displaySTDOutput)
                             Console.WriteLine(line);
                     }
                 });
 
-                var errorTask = Task.Run(async () =>
+                Task errorTask = Task.Run(async () =>
                 {
+                    if (!_stdErrorRedirect)
+                        return;
+
                     while (!process.StandardError.EndOfStream)
                     {
-                        var line = await process.StandardError.ReadLineAsync();
+                        string line = await process.StandardError.ReadLineAsync();
 
                         if (line == null)
                             continue;
 
                         _standardError.Add(line);
 
-                        if (_stdErrorRedirect)
+                        if (displaySTDError)
                             Console.WriteLine(line);
                     }
                 });

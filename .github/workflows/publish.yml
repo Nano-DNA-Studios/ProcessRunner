@@ -2,15 +2,15 @@ name: Publish
 
 on:
   release:
-    types: published
-
+  workflow_dispatch:
+  
 permissions:
   contents: write
   packages: write
 
 jobs:
   setup:
-    runs-on: self-hosted
+    runs-on: ["self-hosted", "run-${{github.run_id}}"]
     steps:
       - name: Install .NET to Device
         uses: actions/setup-dotnet@v4
@@ -28,7 +28,7 @@ jobs:
         run: dotnet restore
 
   version:
-    runs-on: self-hosted
+    runs-on: ["self-hosted", "run-${{github.run_id}}"]
     needs: setup
     outputs:
       version: ${{ steps.get-tag-version.outputs.version }}
@@ -44,7 +44,7 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
   build-nuget:
-    runs-on: self-hosted
+    runs-on: ["self-hosted", "run-${{github.run_id}}"]
     needs: [setup, version]
     outputs:
       packages: ${{ steps.extract-package-names.outputs.PACKAGES}}
@@ -85,7 +85,7 @@ jobs:
           echo "PACKAGES=$packageJson" >> "$GITHUB_OUTPUT"
 
   upload-nuget:
-    runs-on: self-hosted
+    runs-on: ["self-hosted", "run-${{github.run_id}}"]
     needs: [build-nuget, version]
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -108,8 +108,8 @@ jobs:
           gh release upload "${{ github.event.release.tag_name }}" "${{ matrix.packages }}" --repo ${{ github.repository }}
 
   build-source:
+    runs-on: ["self-hosted", "run-${{github.run_id}}"]
     needs: [setup, version]
-    runs-on: self-hosted
     strategy:
       max-parallel: 6
       matrix:
@@ -120,8 +120,8 @@ jobs:
         run: dotnet publish -c Release -r "${{ matrix.platforms }}" -p:Version=${{ needs.version.outputs.version }} --self-contained true --no-restore -o bin/Release/${{ github.event.repository.name }}-${{ matrix.platforms }}
   
   upload-source:
+    runs-on: ["self-hosted", "run-${{github.run_id}}"]
     needs: [build-source, version]
-    runs-on: self-hosted
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     strategy:
@@ -148,8 +148,8 @@ jobs:
           gh release upload "${{ github.event.release.tag_name }}" "${{ github.event.repository.name }}-${{ needs.version.outputs.version }}-${{ matrix.platforms }}.tar.gz" --repo ${{ github.repository }}
 
   publish-to-nuget:
+    runs-on: ["self-hosted", "run-${{github.run_id}}"]
     needs: [setup, build-nuget, build-source]
-    runs-on: self-hosted
     strategy:
       matrix:
         packages: ${{ fromJson(needs.build-nuget.outputs.packages) }}
