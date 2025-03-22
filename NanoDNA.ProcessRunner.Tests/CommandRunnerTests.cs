@@ -140,7 +140,6 @@ namespace NanoDNA.ProcessRunner.Tests
         {
             if (!OnAppropriateOS(OS))
             {
-                Console.WriteLine("Expecting Fail");
                 Assert.Throws<NotSupportedException>(() => new CommandRunner(application));
                 return;
             }
@@ -242,10 +241,10 @@ namespace NanoDNA.ProcessRunner.Tests
         [Test]
         [TestCase(ProcessApplication.CMD, PlatformOperatingSystem.Windows, @"C:\\Users", true)]
         [TestCase(ProcessApplication.CMD, PlatformOperatingSystem.Windows, @"C:\\Users10", false)]
-        [TestCase(ProcessApplication.Bash, PlatformOperatingSystem.Unix, @"bin/", true)]
-        [TestCase(ProcessApplication.Bash, PlatformOperatingSystem.Unix, @"bin10/", false)]
-        [TestCase(ProcessApplication.Sh, PlatformOperatingSystem.OSX, @"bin/", true)]
-        [TestCase(ProcessApplication.Sh, PlatformOperatingSystem.OSX, @"bin10/", false)]
+        [TestCase(ProcessApplication.Bash, PlatformOperatingSystem.Unix, "bin/", true)]
+        [TestCase(ProcessApplication.Bash, PlatformOperatingSystem.Unix, "bin10/", false)]
+        [TestCase(ProcessApplication.Sh, PlatformOperatingSystem.OSX, "bin/", true)]
+        [TestCase(ProcessApplication.Sh, PlatformOperatingSystem.OSX, "bin10/", false)]
         public void SetWorkingDirectory(ProcessApplication application, PlatformOperatingSystem OS, string path, bool pass)
         {
             if (!OnAppropriateOS(OS))
