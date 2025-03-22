@@ -109,8 +109,6 @@ namespace NanoDNA.ProcessRunner.Tests
         [TestCase("PowerShell", PlatformOperatingSystem.Windows)]
         [TestCase("Bash", PlatformOperatingSystem.Unix)]
         [TestCase("Sh", PlatformOperatingSystem.Unix)]
-        [TestCase("Bash", PlatformOperatingSystem.OSX)]
-        [TestCase("Sh", PlatformOperatingSystem.OSX)]
         public void ContructorStringExists(string applicationName, PlatformOperatingSystem OS)
         {
             if (!OnAppropriateOS(OS))
@@ -134,8 +132,6 @@ namespace NanoDNA.ProcessRunner.Tests
         [TestCase(ProcessApplication.PowerShell, PlatformOperatingSystem.Windows)]
         [TestCase(ProcessApplication.Bash, PlatformOperatingSystem.Unix)]
         [TestCase(ProcessApplication.Sh, PlatformOperatingSystem.Unix)]
-        [TestCase(ProcessApplication.Bash, PlatformOperatingSystem.OSX)]
-        [TestCase(ProcessApplication.Sh, PlatformOperatingSystem.OSX)]
         public void ContructorEnumExists(ProcessApplication application, PlatformOperatingSystem OS)
         {
             if (!OnAppropriateOS(OS))
@@ -152,15 +148,13 @@ namespace NanoDNA.ProcessRunner.Tests
         /// <summary>
         /// Tests if the Redirects are set correctly for the String Constructor
         /// </summary>
-        /// <param name="application">Application as a <see cref="ProcessApplication"/></param>
+        /// <param name="applicationName">Name of the Application as a <see cref="ProcessApplication"/></param>
         /// <param name="OS">Operating System to Test on</param>
         [Test]
         [TestCase("CMD", PlatformOperatingSystem.Windows)]
         [TestCase("PowerShell", PlatformOperatingSystem.Windows)]
         [TestCase("Bash", PlatformOperatingSystem.Unix)]
         [TestCase("Sh", PlatformOperatingSystem.Unix)]
-        [TestCase("Bash", PlatformOperatingSystem.OSX)]
-        [TestCase("Sh", PlatformOperatingSystem.OSX)]
         public void ContructorStringRedirects(string applicationName, PlatformOperatingSystem OS)
         {
             if (!OnAppropriateOS(OS))
@@ -200,8 +194,6 @@ namespace NanoDNA.ProcessRunner.Tests
         [TestCase(ProcessApplication.PowerShell, PlatformOperatingSystem.Windows)]
         [TestCase(ProcessApplication.Bash, PlatformOperatingSystem.Unix)]
         [TestCase(ProcessApplication.Sh, PlatformOperatingSystem.Unix)]
-        [TestCase(ProcessApplication.Bash, PlatformOperatingSystem.OSX)]
-        [TestCase(ProcessApplication.Sh, PlatformOperatingSystem.OSX)]
         public void ContructorEnumRedirects(ProcessApplication application, PlatformOperatingSystem OS)
         {
             if (!OnAppropriateOS(OS))
@@ -243,8 +235,6 @@ namespace NanoDNA.ProcessRunner.Tests
         [TestCase(ProcessApplication.CMD, PlatformOperatingSystem.Windows, @"C:\\Users10", false)]
         [TestCase(ProcessApplication.Bash, PlatformOperatingSystem.Unix, "/bin", true)]
         [TestCase(ProcessApplication.Bash, PlatformOperatingSystem.Unix, "/bin10", false)]
-        [TestCase(ProcessApplication.Sh, PlatformOperatingSystem.OSX, "bin/", true)]
-        [TestCase(ProcessApplication.Sh, PlatformOperatingSystem.OSX, "bin10/", false)]
         public void SetWorkingDirectory(ProcessApplication application, PlatformOperatingSystem OS, string path, bool pass)
         {
             if (!OnAppropriateOS(OS))
@@ -276,7 +266,6 @@ namespace NanoDNA.ProcessRunner.Tests
         [Test]
         [TestCase(ProcessApplication.CMD, PlatformOperatingSystem.Windows, "echo hello", "hello")]
         [TestCase(ProcessApplication.Bash, PlatformOperatingSystem.Unix, "echo hello", "hello")]
-        [TestCase(ProcessApplication.Sh, PlatformOperatingSystem.OSX, "echo hello", "hello")]
         public void RunCommandOutput(ProcessApplication application, PlatformOperatingSystem OS, string command, string output)
         {
             if (!OnAppropriateOS(OS))
@@ -303,7 +292,6 @@ namespace NanoDNA.ProcessRunner.Tests
         [Test]
         [TestCase(ProcessApplication.CMD, PlatformOperatingSystem.Windows, "echoe hello")]
         [TestCase(ProcessApplication.Bash, PlatformOperatingSystem.Unix, "echoe hello")]
-        [TestCase(ProcessApplication.Sh, PlatformOperatingSystem.OSX, "echoe hello")]
         public void RunCommandError(ProcessApplication application, PlatformOperatingSystem OS, string command)
         {
             if (!OnAppropriateOS(OS))
@@ -332,7 +320,6 @@ namespace NanoDNA.ProcessRunner.Tests
         [Test]
         [TestCase(ProcessApplication.CMD, PlatformOperatingSystem.Windows, "echo hello", "hello")]
         [TestCase(ProcessApplication.Bash, PlatformOperatingSystem.Unix, "echo hello", "hello")]
-        [TestCase(ProcessApplication.Sh, PlatformOperatingSystem.OSX, "echo hello", "hello")]
         public async Task RunCommandAsyncOutput(ProcessApplication application, PlatformOperatingSystem OS, string command, string output)
         {
             if (!OnAppropriateOS(OS))
@@ -359,7 +346,6 @@ namespace NanoDNA.ProcessRunner.Tests
         [Test]
         [TestCase(ProcessApplication.CMD, PlatformOperatingSystem.Windows, "echoe hello")]
         [TestCase(ProcessApplication.Bash, PlatformOperatingSystem.Unix, "echoe hello")]
-        [TestCase(ProcessApplication.Sh, PlatformOperatingSystem.OSX, "echoe hello")]
         public async Task RunCommandAsyncFail(ProcessApplication application, PlatformOperatingSystem OS, string command)
         {
             if (!OnAppropriateOS(OS))
@@ -389,7 +375,6 @@ namespace NanoDNA.ProcessRunner.Tests
         [Test]
         [TestCase(ProcessApplication.CMD, PlatformOperatingSystem.Windows, "cmd.exe", "echo hello")]
         [TestCase(ProcessApplication.Bash, PlatformOperatingSystem.Unix, "/bin/bash", "echo hello")]
-        [TestCase(ProcessApplication.Sh, PlatformOperatingSystem.OSX, "/bin/sh", "echo hello")]
         public void CustomProcessStartInfo(ProcessApplication application, PlatformOperatingSystem OS, string fileName, string command)
         {
             if (!OnAppropriateOS(OS))
