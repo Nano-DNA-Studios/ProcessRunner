@@ -146,6 +146,8 @@ namespace NanoDNA.ProcessRunner
             _stdErrorRedirect = processStartInfo.RedirectStandardError;
             _standardOutput = new List<string>();
             _standardError = new List<string>();
+
+            SetOSDefaultApp();
         }
 
         /// <summary>
