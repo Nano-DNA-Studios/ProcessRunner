@@ -269,6 +269,7 @@ namespace NanoDNA.ProcessRunner
                     return $"-Command \"{command}\"";
 
                 case ProcessApplication.Bash:
+                    command = command.Replace("\"", "\\\"").Replace("$", "\\$");
                     return $"-c \"{command}\"";
 
                 case ProcessApplication.Sh:
