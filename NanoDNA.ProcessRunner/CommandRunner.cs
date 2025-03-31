@@ -289,8 +289,8 @@ namespace NanoDNA.ProcessRunner
         public void RunCommand(string command, bool displaySTDOutput = false, bool displaySTDError = false)
         {
             _processStartInfo.Arguments = GetApplicationArguments(Application, command);
-            try
-            {
+            //try
+            //{
                 using (Process process = new Process())
                 {
                     process.StartInfo = _processStartInfo;
@@ -331,15 +331,12 @@ namespace NanoDNA.ProcessRunner
                     process.WaitForExit();
 
                     if (process.ExitCode != 0)
-                    {
-                        if (displaySTDError)
-                            Console.WriteLine($"Runner Exited with an Error, Exit Code : {process.ExitCode}");
-                    }
+                        throw new Exception($"Command exited with code {process.ExitCode}: {command}");
                 }
-            } catch (Exception ex)
-            {
-                Console.WriteLine($"Error Running Command: {ex.Message}");
-            }
+            //} catch (Exception ex)
+            //{
+            //    Console.WriteLine($"Error Running Command: {ex.Message}");
+            //}
         }
 
         /// <summary>
@@ -353,8 +350,8 @@ namespace NanoDNA.ProcessRunner
             _processStartInfo.Arguments = GetApplicationArguments(Application, command);
             _standardOutput.Clear();
             _standardError.Clear();
-            try
-            {
+            //try
+            //{
                 using (Process process = new Process())
                 {
                     process.StartInfo = _processStartInfo;
@@ -402,14 +399,12 @@ namespace NanoDNA.ProcessRunner
                     await process.WaitForExitAsync();
 
                     if (process.ExitCode != 0 && _stdErrorRedirect)
-                    {
-                        Console.WriteLine($"Runner exited with error. Exit Code: {process.ExitCode}");
-                    }
+                        throw new Exception($"Command exited with code {process.ExitCode}: {command}");
                 }
-            } catch (Exception ex)
-            {
-                Console.WriteLine($"Error Running Command: {ex.Message}");
-            }
+            //} catch (Exception ex)
+            //{
+            //    Console.WriteLine($"Error Running Command: {ex.Message}");
+            //}
         }
     }
 }
