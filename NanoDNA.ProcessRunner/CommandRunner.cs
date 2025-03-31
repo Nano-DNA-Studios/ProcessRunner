@@ -351,15 +351,7 @@ namespace NanoDNA.ProcessRunner
                 process.WaitForExit();
 
                 if (process.ExitCode != 0)
-                {
-                    foreach (string line in _standardError)
-                    {
-                        Console.WriteLine(line);
-                    }
-
                     throw new Exception($"Command exited with code {process.ExitCode}: {command}");
-                }
-
             }
             //} catch (Exception ex)
             //{
