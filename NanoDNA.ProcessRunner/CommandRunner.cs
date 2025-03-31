@@ -281,6 +281,26 @@ namespace NanoDNA.ProcessRunner
         }
 
         /// <summary>
+        /// Tries to Run a Command but doesn't throw an Exception if it fails.
+        /// </summary>
+        /// <param name="command"></param>
+        /// <param name="displaySTDOutput"></param>
+        /// <param name="displaySTDError"></param>
+        public bool TryRunCommand(string command, bool displaySTDOutput = false, bool displaySTDError = false)
+        {
+            try
+            {
+                RunCommand(command, displaySTDOutput, displaySTDError);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error Running Command: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Runs a Command through the <see cref="ProcessApplication"/>.
         /// </summary>
         /// <param name="command">The Command to be run through the <see cref="ProcessApplication"/>.</param>
@@ -345,6 +365,26 @@ namespace NanoDNA.ProcessRunner
             //{
             //    Console.WriteLine($"Error Running Command: {ex.Message}");
             //}
+        }
+
+        /// <summary>
+        /// Tries to Run a Command but doesn't throw an Exception if it fails.
+        /// </summary>
+        /// <param name="command"></param>
+        /// <param name="displaySTDOutput"></param>
+        /// <param name="displaySTDError"></param>
+        public async Task<bool> TryRunCommandAsync(string command, bool displaySTDOutput = false, bool displaySTDError = false)
+        {
+            try
+            {
+                await RunCommandAsync(command, displaySTDOutput, displaySTDError);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error Running Command: {ex.Message}");
+                return false;
+            }
         }
 
         /// <summary>
