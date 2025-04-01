@@ -283,9 +283,9 @@ namespace NanoDNA.ProcessRunner
         /// <summary>
         /// Tries to Run a Command but doesn't throw an Exception if it fails.
         /// </summary>
-        /// <param name="command"></param>
-        /// <param name="displaySTDOutput"></param>
-        /// <param name="displaySTDError"></param>
+        /// <param name="command">The Command to be run through the <see cref="ProcessApplication"/>.</param>
+        /// <param name="displaySTDOutput">Display the Standard Output in the Console.</param>
+        /// <param name="displaySTDError">Display the Standard Error in the Console.</param>
         public bool TryRunCommand(string command, bool displaySTDOutput = false, bool displaySTDError = false)
         {
             try
@@ -311,8 +311,7 @@ namespace NanoDNA.ProcessRunner
         public void RunCommand(string command, bool displaySTDOutput = false, bool displaySTDError = false)
         {
             _processStartInfo.Arguments = GetApplicationArguments(Application, command);
-            //try
-            //{
+            
             using (Process process = new Process())
             {
                 process.StartInfo = _processStartInfo;
@@ -355,18 +354,14 @@ namespace NanoDNA.ProcessRunner
                 if (process.ExitCode != 0)
                     throw new Exception($"Command exited with code {process.ExitCode}: {command}");
             }
-            //} catch (Exception ex)
-            //{
-            //    Console.WriteLine($"Error Running Command: {ex.Message}");
-            //}
         }
 
         /// <summary>
         /// Tries to Run a Command but doesn't throw an Exception if it fails.
         /// </summary>
-        /// <param name="command"></param>
-        /// <param name="displaySTDOutput"></param>
-        /// <param name="displaySTDError"></param>
+        /// <param name="command">The Command to be run through the <see cref="ProcessApplication"/>.</param>
+        /// <param name="displaySTDOutput">Display the Standard Output in the Console.</param>
+        /// <param name="displaySTDError">Display the Standard Error in the Console.</param>
         public async Task<bool> TryRunCommandAsync(string command, bool displaySTDOutput = false, bool displaySTDError = false)
         {
             try
@@ -394,8 +389,7 @@ namespace NanoDNA.ProcessRunner
             _processStartInfo.Arguments = GetApplicationArguments(Application, command);
             _standardOutput.Clear();
             _standardError.Clear();
-            //try
-            //{
+            
             using (Process process = new Process())
             {
                 process.StartInfo = _processStartInfo;
@@ -445,10 +439,6 @@ namespace NanoDNA.ProcessRunner
                 if (process.ExitCode != 0 && _stdErrorRedirect)
                     throw new Exception($"Command exited with code {process.ExitCode}: {command}");
             }
-            //} catch (Exception ex)
-            //{
-            //    Console.WriteLine($"Error Running Command: {ex.Message}");
-            //}
         }
     }
 }
