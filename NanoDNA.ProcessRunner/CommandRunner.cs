@@ -295,7 +295,9 @@ namespace NanoDNA.ProcessRunner
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error Running Command: {ex.Message}");
+                if (displaySTDError)
+                    Console.WriteLine($"Error Running Command: {ex.Message} \n {ex.StackTrace}");
+
                 return false;
             }
         }
@@ -374,7 +376,9 @@ namespace NanoDNA.ProcessRunner
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error Running Command: {ex.Message}");
+                if (displaySTDError)
+                    Console.WriteLine($"Error Running Command: {ex.Message} \n {ex.StackTrace}");
+
                 return false;
             }
         }
