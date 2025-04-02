@@ -138,7 +138,7 @@ namespace NanoDNA.ProcessRunner
         /// Initializes a new Instance of <see cref="CommandRunner"/>. Uses the <see cref="System.Diagnostics.ProcessStartInfo"/> provided by the User.
         /// </summary>
         /// <param name="processStartInfo">Process Info defined by the User</param>
-        public CommandRunner (ProcessStartInfo processStartInfo)
+        public CommandRunner(ProcessStartInfo processStartInfo)
         {
             _processStartInfo = processStartInfo;
 
@@ -280,6 +280,28 @@ namespace NanoDNA.ProcessRunner
         }
 
         /// <summary>
+        /// Tries to Run a Command but doesn't throw an Exception if it fails.
+        /// </summary>
+        /// <param name="command">The Command to be run through the <see cref="ProcessApplication"/>.</param>
+        /// <param name="displaySTDOutput">Display the Standard Output in the Console.</param>
+        /// <param name="displaySTDError">Display the Standard Error in the Console.</param>
+        public bool TryRunCommand(string command, bool displaySTDOutput = false, bool displaySTDError = false)
+        {
+            try
+            {
+                RunCommand(command, displaySTDOutput, displaySTDError);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                if (displaySTDError)
+                    Console.WriteLine($"Error Running Command: {ex.Message} \n {ex.StackTrace}");
+
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Runs a Command through the <see cref="ProcessApplication"/>.
         /// </summary>
         /// <param name="command">The Command to be run through the <see cref="ProcessApplication"/>.</param>
@@ -288,56 +310,70 @@ namespace NanoDNA.ProcessRunner
         public void RunCommand(string command, bool displaySTDOutput = false, bool displaySTDError = false)
         {
             _processStartInfo.Arguments = GetApplicationArguments(Application, command);
-            try
+            
+            using (Process process = new Process())
             {
-                using (Process process = new Process())
+                process.StartInfo = _processStartInfo;
+                process.Start();
+
+                if (_stdOutputRedirect)
                 {
-                    process.StartInfo = _processStartInfo;
-                    process.Start();
-
-                    if (_stdOutputRedirect)
+                    while (!process.StandardOutput.EndOfStream)
                     {
-                        while (!process.StandardOutput.EndOfStream)
-                        {
-                            string line = process.StandardOutput.ReadLine();
+                        string line = process.StandardOutput.ReadLine();
 
-                            if (line == null)
-                                continue;
+                        if (line == null)
+                            continue;
 
-                            _standardOutput.Add(line);
+                        _standardOutput.Add(line);
 
-                            if (displaySTDOutput)
-                                Console.WriteLine(line);
-                        }
-                    }
-
-                    if (_stdErrorRedirect)
-                    {
-                        while (!process.StandardError.EndOfStream)
-                        {
-                            string line = process.StandardError.ReadLine();
-
-                            if (line == null)
-                                continue;
-
-                            _standardError.Add(line);
-
-                            if (displaySTDError)
-                                Console.WriteLine(line);
-                        }
-                    }
-
-                    process.WaitForExit();
-
-                    if (process.ExitCode != 0)
-                    {
-                        if (displaySTDError)
-                            Console.WriteLine($"Runner Exited with an Error, Exit Code : {process.ExitCode}");
+                        if (displaySTDOutput)
+                            Console.WriteLine(line);
                     }
                 }
-            } catch (Exception ex)
+
+                if (_stdErrorRedirect)
+                {
+                    while (!process.StandardError.EndOfStream)
+                    {
+                        string line = process.StandardError.ReadLine();
+
+                        if (line == null)
+                            continue;
+
+                        _standardError.Add(line);
+
+                        if (displaySTDError)
+                            Console.WriteLine(line);
+                    }
+                }
+
+                process.WaitForExit();
+
+                if (process.ExitCode != 0)
+                    throw new Exception($"Command exited with code {process.ExitCode}: {command}");
+            }
+        }
+
+        /// <summary>
+        /// Tries to Run a Command but doesn't throw an Exception if it fails.
+        /// </summary>
+        /// <param name="command">The Command to be run through the <see cref="ProcessApplication"/>.</param>
+        /// <param name="displaySTDOutput">Display the Standard Output in the Console.</param>
+        /// <param name="displaySTDError">Display the Standard Error in the Console.</param>
+        public async Task<bool> TryRunCommandAsync(string command, bool displaySTDOutput = false, bool displaySTDError = false)
+        {
+            try
             {
-                Console.WriteLine($"Error Running Command: {ex.Message}");
+                await RunCommandAsync(command, displaySTDOutput, displaySTDError);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                if (displaySTDError)
+                    Console.WriteLine($"Error Running Command: {ex.Message} \n {ex.StackTrace}");
+
+                return false;
             }
         }
 
@@ -352,62 +388,55 @@ namespace NanoDNA.ProcessRunner
             _processStartInfo.Arguments = GetApplicationArguments(Application, command);
             _standardOutput.Clear();
             _standardError.Clear();
-            try
+            
+            using (Process process = new Process())
             {
-                using (Process process = new Process())
+                process.StartInfo = _processStartInfo;
+                process.Start();
+
+                Task outputTask = Task.Run(async () =>
                 {
-                    process.StartInfo = _processStartInfo;
-                    process.Start();
+                    if (!_stdOutputRedirect)
+                        return;
 
-                    Task outputTask = Task.Run(async () =>
+                    while (!process.StandardOutput.EndOfStream)
                     {
-                        if (!_stdOutputRedirect)
-                            return;
+                        string line = await process.StandardOutput.ReadLineAsync();
 
-                        while (!process.StandardOutput.EndOfStream)
-                        {
-                            string line = await process.StandardOutput.ReadLineAsync();
+                        if (line == null)
+                            continue;
 
-                            if (line == null)
-                                continue;
+                        _standardOutput.Add(line);
 
-                            _standardOutput.Add(line);
-
-                            if (displaySTDOutput)
-                                Console.WriteLine(line);
-                        }
-                    });
-
-                    Task errorTask = Task.Run(async () =>
-                    {
-                        if (!_stdErrorRedirect)
-                            return;
-
-                        while (!process.StandardError.EndOfStream)
-                        {
-                            string line = await process.StandardError.ReadLineAsync();
-
-                            if (line == null)
-                                continue;
-
-                            _standardError.Add(line);
-
-                            if (displaySTDError)
-                                Console.WriteLine(line);
-                        }
-                    });
-
-                    await Task.WhenAll(outputTask, errorTask);
-                    await process.WaitForExitAsync();
-
-                    if (process.ExitCode != 0 && _stdErrorRedirect)
-                    {
-                        Console.WriteLine($"Runner exited with error. Exit Code: {process.ExitCode}");
+                        if (displaySTDOutput)
+                            Console.WriteLine(line);
                     }
-                }
-            } catch (Exception ex)
-            {
-                Console.WriteLine($"Error Running Command: {ex.Message}");
+                });
+
+                Task errorTask = Task.Run(async () =>
+                {
+                    if (!_stdErrorRedirect)
+                        return;
+
+                    while (!process.StandardError.EndOfStream)
+                    {
+                        string line = await process.StandardError.ReadLineAsync();
+
+                        if (line == null)
+                            continue;
+
+                        _standardError.Add(line);
+
+                        if (displaySTDError)
+                            Console.WriteLine(line);
+                    }
+                });
+
+                await Task.WhenAll(outputTask, errorTask);
+                await process.WaitForExitAsync();
+
+                if (process.ExitCode != 0 && _stdErrorRedirect)
+                    throw new Exception($"Command exited with code {process.ExitCode}: {command}");
             }
         }
     }

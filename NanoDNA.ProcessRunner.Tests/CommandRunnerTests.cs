@@ -301,13 +301,19 @@ namespace NanoDNA.ProcessRunner.Tests
             }
 
             CommandRunner commandRunner = new CommandRunner(application);
-            commandRunner.RunCommand(command, true, true);
 
-            Assert.That(commandRunner.StandardOutput.Length, Is.EqualTo(0));
-            Assert.That(commandRunner.StandardError.Length, Is.GreaterThan(0));
+            try
+            {
+                commandRunner.RunCommand(command, true, true);
+                Assert.Fail("No Exception Thrown");
+            } catch (Exception e)
+            {
+                Assert.That(commandRunner.StandardOutput.Length, Is.EqualTo(0));
+                Assert.That(commandRunner.StandardError.Length, Is.GreaterThan(0));
 
-            string errorOutput = string.Join("\n", commandRunner.StandardError).ToLower();
-            Assert.That(errorOutput, Does.Contain("not").And.Contain("found").Or.Contain("recognized"));
+                string errorOutput = string.Join("\n", commandRunner.StandardError).ToLower();
+                Assert.That(errorOutput, Does.Contain("not").And.Contain("found").Or.Contain("recognized"));
+            }
         }
 
         /// <summary>
@@ -356,13 +362,18 @@ namespace NanoDNA.ProcessRunner.Tests
 
             CommandRunner commandRunner = new CommandRunner(application);
 
-            await commandRunner.RunCommandAsync(command);
+            try
+            {
+                await commandRunner.RunCommandAsync(command);
+                Assert.Fail($"Command was supposed to fail : {command}");
+            } catch (Exception e)
+            {
+                Assert.That(commandRunner.StandardOutput.Length, Is.EqualTo(0));
+                Assert.That(commandRunner.StandardError.Length, Is.GreaterThan(0));
 
-            Assert.That(commandRunner.StandardOutput.Length, Is.EqualTo(0));
-            Assert.That(commandRunner.StandardError.Length, Is.GreaterThan(0));
-
-            string errorOutput = string.Join("\n", commandRunner.StandardError).ToLower();
-            Assert.That(errorOutput, Does.Contain("not").And.Contain("found").Or.Contain("recognized"));
+                string errorOutput = string.Join("\n", commandRunner.StandardError).ToLower();
+                Assert.That(errorOutput, Does.Contain("not").And.Contain("found").Or.Contain("recognized"));
+            }
         }
 
         /// <summary>
