@@ -4,9 +4,11 @@
 	<PropertyGroup>
 		<RootNamespace>NanoDNA.ProcessRunner</RootNamespace>
 		<ProductName>$(RootNamespace)</ProductName>
+		<PackageId>$(RootNamespace)</PackageId>
 		<AssemblyName>$(RootNamespace)</AssemblyName>
 		<OutputType>Library</OutputType>
 		<IsPackable>true</IsPackable>
+		<DebugType>embedded</DebugType>
 	</PropertyGroup>
 
 	<!-- Add Individual Platforms in NuGet Package -->
