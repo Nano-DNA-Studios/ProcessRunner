@@ -26,7 +26,7 @@
 	
 	<!-- Project Reference -->
 	<ItemGroup>
-	  <ProjectReference Include="..\NanoDNA.ProcessRunner\ProcessRunner.csproj" />
+	  <ProjectReference Include="..\ProcessRunner\ProcessRunner.csproj" />
 	</ItemGroup>
 
 </Project>
