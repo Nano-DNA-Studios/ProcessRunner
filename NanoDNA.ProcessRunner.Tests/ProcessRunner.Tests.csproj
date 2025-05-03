@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<!-- Building / Publishing Metadata -->
 	<PropertyGroup>
@@ -26,7 +26,7 @@
 	
 	<!-- Project Reference -->
 	<ItemGroup>
-	  <ProjectReference Include="..\NanoDNA.ProcessRunner\NanoDNA.ProcessRunner.csproj" />
+	  <ProjectReference Include="..\NanoDNA.ProcessRunner\ProcessRunner.csproj" />
 	</ItemGroup>
 
 </Project>
