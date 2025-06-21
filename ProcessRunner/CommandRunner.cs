@@ -310,49 +310,60 @@ namespace NanoDNA.ProcessRunner
         public void RunCommand(string command, bool displaySTDOutput = false, bool displaySTDError = false)
         {
             _processStartInfo.Arguments = GetApplicationArguments(Application, command);
-            
-            using (Process process = new Process())
+
+            using (Process? process = Process.Start(_processStartInfo))
             {
-                process.StartInfo = _processStartInfo;
-                process.Start();
+                if (process == null)
+                    return;
 
-                if (_stdOutputRedirect)
-                {
-                    while (!process.StandardOutput.EndOfStream)
-                    {
-                        string line = process.StandardOutput.ReadLine();
+                process.OutputDataReceived += (s, e) => STDOutputReceived(s, e, displaySTDOutput);
+                process.ErrorDataReceived += (s, e) => STDErrorReceived(s, e, displaySTDError);
 
-                        if (line == null)
-                            continue;
-
-                        _standardOutput.Add(line);
-
-                        if (displaySTDOutput)
-                            Console.WriteLine(line);
-                    }
-                }
-
-                if (_stdErrorRedirect)
-                {
-                    while (!process.StandardError.EndOfStream)
-                    {
-                        string line = process.StandardError.ReadLine();
-
-                        if (line == null)
-                            continue;
-
-                        _standardError.Add(line);
-
-                        if (displaySTDError)
-                            Console.WriteLine(line);
-                    }
-                }
-
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
                 process.WaitForExit();
 
                 if (process.ExitCode != 0)
                     throw new Exception($"Command exited with code {process.ExitCode}: {command}");
             }
+        }
+
+        /// <summary>
+        /// Handles receiving Standard Output from the Process.
+        /// </summary>
+        /// <param name="sender">Object Sending the Event</param>
+        /// <param name="data">Data Sent by the Object</param>
+        /// <param name="displaySTDOutput">Toggle for displaying the STD Output to the Users Console</param>
+        private void STDOutputReceived(object sender, DataReceivedEventArgs data, bool displaySTDOutput)
+        {
+            string? output = data.Data;
+
+            if (output == null)
+                return;
+
+            if (displaySTDOutput)
+                Console.WriteLine(output);
+
+            _standardOutput.Add(output);
+        }
+
+        /// <summary>
+        /// Handles receiving Standard Error from the Process.
+        /// </summary>
+        /// <param name="sender">Object Sending the Event</param>
+        /// <param name="data">Data Sent by the Object</param>
+        /// <param name="displaySTDError">Toggle for displaying the STD Error to the Users Console</param>
+        private void STDErrorReceived(object sender, DataReceivedEventArgs data, bool displaySTDError)
+        {
+            string? output = data.Data;
+
+            if (output == null)
+                return;
+
+            if (displaySTDError)
+                Console.WriteLine(output);
+
+            _standardError.Add(output);
         }
 
         /// <summary>
@@ -388,56 +399,25 @@ namespace NanoDNA.ProcessRunner
             _processStartInfo.Arguments = GetApplicationArguments(Application, command);
             _standardOutput.Clear();
             _standardError.Clear();
-            
-            using (Process process = new Process())
+
+            await Task.Run(() =>
             {
-                process.StartInfo = _processStartInfo;
-                process.Start();
-
-                Task outputTask = Task.Run(async () =>
+                using (Process? process = Process.Start(_processStartInfo))
                 {
-                    if (!_stdOutputRedirect)
+                    if (process == null)
                         return;
 
-                    while (!process.StandardOutput.EndOfStream)
-                    {
-                        string line = await process.StandardOutput.ReadLineAsync();
+                    process.OutputDataReceived += (s, e) => STDOutputReceived(s, e, displaySTDOutput);
+                    process.ErrorDataReceived += (s, e) => STDErrorReceived(s, e, displaySTDError);
 
-                        if (line == null)
-                            continue;
+                    process.BeginOutputReadLine();
+                    process.BeginErrorReadLine();
+                    process.WaitForExit();
 
-                        _standardOutput.Add(line);
-
-                        if (displaySTDOutput)
-                            Console.WriteLine(line);
-                    }
-                });
-
-                Task errorTask = Task.Run(async () =>
-                {
-                    if (!_stdErrorRedirect)
-                        return;
-
-                    while (!process.StandardError.EndOfStream)
-                    {
-                        string line = await process.StandardError.ReadLineAsync();
-
-                        if (line == null)
-                            continue;
-
-                        _standardError.Add(line);
-
-                        if (displaySTDError)
-                            Console.WriteLine(line);
-                    }
-                });
-
-                await Task.WhenAll(outputTask, errorTask);
-                await process.WaitForExitAsync();
-
-                if (process.ExitCode != 0 && _stdErrorRedirect)
-                    throw new Exception($"Command exited with code {process.ExitCode}: {command}");
-            }
+                    if (process.ExitCode != 0)
+                        throw new Exception($"Command exited with code {process.ExitCode}: {command}");
+                }
+            });
         }
     }
 }
