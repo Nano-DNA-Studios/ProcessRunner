@@ -14,11 +14,6 @@ namespace NanoDNA.ProcessRunner
         /// <summary>
         /// Specifies the Set of Values to use when Starting a Process.
         /// </summary>
-        //public ProcessStartInfo ProcessStartInfo { get => _processStartInfo; }
-
-        /// <summary>
-        /// Specifies the Set of Values to use when Starting a Process.
-        /// </summary>
         public ProcessStartInfo ProcessStartInfo { get; set; }
 
         /// <summary>
