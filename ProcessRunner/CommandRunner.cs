@@ -311,37 +311,13 @@ namespace NanoDNA.ProcessRunner
         {
             _processStartInfo.Arguments = GetApplicationArguments(Application, command);
 
-
             using (Process? process = Process.Start(_processStartInfo))
             {
                 if (process == null)
                     return;
 
-                process.OutputDataReceived += (s, e) =>
-                {
-                    string? output = e.Data;
-
-                    if (output == null)
-                        return;
-
-                    if (displaySTDOutput)
-                        Console.WriteLine(output);
-
-                    _standardOutput.Add(output);
-                };
-
-                process.ErrorDataReceived += (s, e) =>
-                {
-                    string? error = e.Data;
-
-                    if (error == null)
-                        return;
-
-                    if (displaySTDError)
-                        Console.WriteLine(error);
-
-                    _standardError.Add(error);
-                };
+                process.OutputDataReceived += (s, e) => STDOutputReceived(s, e, displaySTDOutput);
+                process.ErrorDataReceived += (s, e) => STDErrorReceived(s, e, displaySTDError);
 
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
@@ -349,7 +325,6 @@ namespace NanoDNA.ProcessRunner
 
                 if (process.ExitCode != 0)
                     throw new Exception($"Command exited with code {process.ExitCode}: {command}");
-
             }
 
 
@@ -398,6 +373,44 @@ namespace NanoDNA.ProcessRunner
         }
 
         /// <summary>
+        /// Handles receiving Standard Output from the Process.
+        /// </summary>
+        /// <param name="sender">Object Sending the Event</param>
+        /// <param name="data">Data Sent by the Object</param>
+        /// <param name="displaySTDOutput">Toggle for displaying the STD Output to the Users Console</param>
+        private void STDOutputReceived(object sender, DataReceivedEventArgs data, bool displaySTDOutput)
+        {
+            string? output = data.Data;
+
+            if (output == null)
+                return;
+
+            if (displaySTDOutput)
+                Console.WriteLine(output);
+
+            _standardOutput.Add(output);
+        }
+
+        /// <summary>
+        /// Handles receiving Standard Error from the Process.
+        /// </summary>
+        /// <param name="sender">Object Sending the Event</param>
+        /// <param name="data">Data Sent by the Object</param>
+        /// <param name="displaySTDError">Toggle for displaying the STD Error to the Users Console</param>
+        private void STDErrorReceived(object sender, DataReceivedEventArgs data, bool displaySTDError)
+        {
+            string? output = data.Data;
+
+            if (output == null)
+                return;
+
+            if (displaySTDError)
+                Console.WriteLine(output);
+
+            _standardError.Add(output);
+        }
+
+        /// <summary>
         /// Tries to Run a Command but doesn't throw an Exception if it fails.
         /// </summary>
         /// <param name="command">The Command to be run through the <see cref="ProcessApplication"/>.</param>
@@ -431,6 +444,26 @@ namespace NanoDNA.ProcessRunner
             _standardOutput.Clear();
             _standardError.Clear();
 
+            await Task.Run(() =>
+            {
+                using (Process? process = Process.Start(_processStartInfo))
+                {
+                    if (process == null)
+                        return;
+
+                    process.OutputDataReceived += (s, e) => STDOutputReceived(s, e, displaySTDOutput);
+                    process.ErrorDataReceived += (s, e) => STDErrorReceived(s, e, displaySTDError);
+
+                    process.BeginOutputReadLine();
+                    process.BeginErrorReadLine();
+                    process.WaitForExit();
+
+                    if (process.ExitCode != 0)
+                        throw new Exception($"Command exited with code {process.ExitCode}: {command}");
+                }
+            });
+
+/*
             using (Process process = new Process())
             {
                 process.StartInfo = _processStartInfo;
@@ -443,7 +476,7 @@ namespace NanoDNA.ProcessRunner
 
                     while (!process.StandardOutput.EndOfStream)
                     {
-                        string line = await process.StandardOutput.ReadLineAsync();
+                        string? line = await process.StandardOutput.ReadLineAsync();
 
                         if (line == null)
                             continue;
@@ -462,7 +495,7 @@ namespace NanoDNA.ProcessRunner
 
                     while (!process.StandardError.EndOfStream)
                     {
-                        string line = await process.StandardError.ReadLineAsync();
+                        string? line = await process.StandardError.ReadLineAsync();
 
                         if (line == null)
                             continue;
@@ -479,7 +512,7 @@ namespace NanoDNA.ProcessRunner
 
                 if (process.ExitCode != 0 && _stdErrorRedirect)
                     throw new Exception($"Command exited with code {process.ExitCode}: {command}");
-            }
+            }*/
         }
     }
 }
