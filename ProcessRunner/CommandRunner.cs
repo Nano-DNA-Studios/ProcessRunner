@@ -321,16 +321,26 @@ namespace NanoDNA.ProcessRunner
                 {
                     string? output = e.Data;
 
-                    if (displaySTDOutput && output != null)
+                    if (output == null)
+                        return;
+
+                    if (displaySTDOutput)
                         Console.WriteLine(output);
+
+                    _standardOutput.Add(output);
                 };
 
                 process.ErrorDataReceived += (s, e) =>
                 {
                     string? error = e.Data;
 
-                    if (displaySTDError && error != null)
+                    if (error == null)
+                        return;
+
+                    if (displaySTDError)
                         Console.WriteLine(error);
+
+                    _standardError.Add(error);
                 };
 
                 process.BeginOutputReadLine();
