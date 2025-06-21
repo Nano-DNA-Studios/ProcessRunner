@@ -14,7 +14,12 @@ namespace NanoDNA.ProcessRunner
         /// <summary>
         /// Specifies the Set of Values to use when Starting a Process.
         /// </summary>
-        public ProcessStartInfo ProcessStartInfo { get; set; }
+        //public ProcessStartInfo ProcessStartInfo { get => _processStartInfo; }
+
+        /// <summary>
+        /// Specifies the Set of Values to use when Starting a Process.
+        /// </summary>
+        public ProcessStartInfo _processStartInfo { get; set; }
 
         /// <summary>
         /// Process Application the Command will run through.
@@ -54,7 +59,7 @@ namespace NanoDNA.ProcessRunner
         /// <summary>
         /// Working Directory where the Command will be executed.
         /// </summary>
-        public string WorkingDirectory { get => ProcessStartInfo.WorkingDirectory; }
+        public string WorkingDirectory { get => _processStartInfo.WorkingDirectory; }
 
         /// <summary>
         /// Initializes a new Instance of <see cref="CommandRunner"/> using <see cref="ProcessApplication"/>.
@@ -70,12 +75,12 @@ namespace NanoDNA.ProcessRunner
             _standardOutput = new List<string>();
             _standardError = new List<string>();
 
-            ProcessStartInfo = new ProcessStartInfo();
-            ProcessStartInfo.FileName = GetApplicationPath(application);
-            ProcessStartInfo.RedirectStandardOutput = _stdOutputRedirect;
-            ProcessStartInfo.RedirectStandardError = _stdErrorRedirect;
-            ProcessStartInfo.CreateNoWindow = true;
-            ProcessStartInfo.UseShellExecute = false;
+            _processStartInfo = new ProcessStartInfo();
+            _processStartInfo.FileName = GetApplicationPath(application);
+            _processStartInfo.RedirectStandardOutput = _stdOutputRedirect;
+            _processStartInfo.RedirectStandardError = _stdErrorRedirect;
+            _processStartInfo.CreateNoWindow = true;
+            _processStartInfo.UseShellExecute = false;
         }
 
         /// <summary>
@@ -86,12 +91,12 @@ namespace NanoDNA.ProcessRunner
         /// <param name="stdErrRedirect">Redirect the Standard Error and Store in the <see cref="StandardError"/> Property</param>
         public CommandRunner(string applicationName, bool stdOutRedirect = true, bool stdErrRedirect = true)
         {
-            ProcessStartInfo = new ProcessStartInfo();
+            _processStartInfo = new ProcessStartInfo();
 
             if (Enum.TryParse(applicationName, out ProcessApplication app))
             {
                 Application = app;
-                ProcessStartInfo.FileName = GetApplicationPath(app);
+                _processStartInfo.FileName = GetApplicationPath(app);
             }
             else
                 throw new ArgumentException($"Invalid Process Application: {applicationName}");
@@ -101,11 +106,11 @@ namespace NanoDNA.ProcessRunner
             _standardOutput = new List<string>();
             _standardError = new List<string>();
 
-            ProcessStartInfo.FileName = applicationName;
-            ProcessStartInfo.RedirectStandardOutput = _stdOutputRedirect;
-            ProcessStartInfo.RedirectStandardError = _stdErrorRedirect;
-            ProcessStartInfo.CreateNoWindow = true;
-            ProcessStartInfo.UseShellExecute = false;
+            _processStartInfo.FileName = applicationName;
+            _processStartInfo.RedirectStandardOutput = _stdOutputRedirect;
+            _processStartInfo.RedirectStandardError = _stdErrorRedirect;
+            _processStartInfo.CreateNoWindow = true;
+            _processStartInfo.UseShellExecute = false;
         }
 
         /// <summary>
@@ -120,11 +125,11 @@ namespace NanoDNA.ProcessRunner
             _standardOutput = new List<string>();
             _standardError = new List<string>();
 
-            ProcessStartInfo = new ProcessStartInfo();
-            ProcessStartInfo.RedirectStandardOutput = _stdOutputRedirect;
-            ProcessStartInfo.RedirectStandardError = _stdErrorRedirect;
-            ProcessStartInfo.CreateNoWindow = true;
-            ProcessStartInfo.UseShellExecute = false;
+            _processStartInfo = new ProcessStartInfo();
+            _processStartInfo.RedirectStandardOutput = _stdOutputRedirect;
+            _processStartInfo.RedirectStandardError = _stdErrorRedirect;
+            _processStartInfo.CreateNoWindow = true;
+            _processStartInfo.UseShellExecute = false;
 
             SetOSDefaultApp();
         }
@@ -135,7 +140,7 @@ namespace NanoDNA.ProcessRunner
         /// <param name="processStartInfo">Process Info defined by the User</param>
         public CommandRunner(ProcessStartInfo processStartInfo)
         {
-            ProcessStartInfo = processStartInfo;
+            _processStartInfo = processStartInfo;
 
             _stdOutputRedirect = processStartInfo.RedirectStandardOutput;
             _stdErrorRedirect = processStartInfo.RedirectStandardError;
@@ -159,7 +164,7 @@ namespace NanoDNA.ProcessRunner
             else
                 throw new NotSupportedException($"Unsupported OS");
 
-            ProcessStartInfo.FileName = GetApplicationPath(Application);
+            _processStartInfo.FileName = GetApplicationPath(Application);
         }
 
         /// <summary>
@@ -190,7 +195,7 @@ namespace NanoDNA.ProcessRunner
         public void SetStandardOutputOutputRedirect(bool redirectState)
         {
             _stdOutputRedirect = redirectState;
-            ProcessStartInfo.RedirectStandardOutput = redirectState;
+            _processStartInfo.RedirectStandardOutput = redirectState;
         }
 
         /// <summary>
@@ -200,7 +205,7 @@ namespace NanoDNA.ProcessRunner
         public void SetStandardErrorOutputRedirect(bool redirectState)
         {
             _stdErrorRedirect = redirectState;
-            ProcessStartInfo.RedirectStandardError = redirectState;
+            _processStartInfo.RedirectStandardError = redirectState;
         }
 
         /// <summary>
@@ -212,7 +217,7 @@ namespace NanoDNA.ProcessRunner
             if (!Directory.Exists(directory))
                 throw new DirectoryNotFoundException("Directory does not exist: " + directory);
 
-            ProcessStartInfo.WorkingDirectory = directory;
+            _processStartInfo.WorkingDirectory = directory;
         }
 
         /// <summary>
@@ -304,9 +309,9 @@ namespace NanoDNA.ProcessRunner
         /// <param name="displaySTDError">Display the Standard Error in the Console.</param>
         public void RunCommand(string command, bool displaySTDOutput = false, bool displaySTDError = false)
         {
-            ProcessStartInfo.Arguments = GetApplicationArguments(Application, command);
+            _processStartInfo.Arguments = GetApplicationArguments(Application, command);
 
-            using (Process? process = Process.Start(ProcessStartInfo))
+            using (Process? process = Process.Start(_processStartInfo))
             {
                 if (process == null)
                     return;
@@ -391,13 +396,13 @@ namespace NanoDNA.ProcessRunner
         /// <param name="displaySTDError">Display the Standard Error in the Console.</param>
         public async Task RunCommandAsync(string command, bool displaySTDOutput = false, bool displaySTDError = false)
         {
-            ProcessStartInfo.Arguments = GetApplicationArguments(Application, command);
+            _processStartInfo.Arguments = GetApplicationArguments(Application, command);
             _standardOutput.Clear();
             _standardError.Clear();
 
             await Task.Run(() =>
             {
-                using (Process? process = Process.Start(ProcessStartInfo))
+                using (Process? process = Process.Start(_processStartInfo))
                 {
                     if (process == null)
                         return;
