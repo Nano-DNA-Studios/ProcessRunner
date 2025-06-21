@@ -9,6 +9,7 @@
 		<OutputType>Library</OutputType>
 		<IsPackable>true</IsPackable>
 		<DebugType>embedded</DebugType>
+		<Nullable>enable</Nullable>
 	</PropertyGroup>
 
 	<!-- Add Individual Platforms in NuGet Package -->
