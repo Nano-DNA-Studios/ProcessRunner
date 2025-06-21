@@ -341,10 +341,10 @@ namespace NanoDNA.ProcessRunner
             if (output == null)
                 return;
 
+            _standardOutput.Add(output);
+
             if (displaySTDOutput)
                 Console.WriteLine(output);
-
-            _standardOutput.Add(output);
         }
 
         /// <summary>
@@ -360,10 +360,10 @@ namespace NanoDNA.ProcessRunner
             if (output == null)
                 return;
 
+            _standardError.Add(output);
+
             if (displaySTDError)
                 Console.WriteLine(output);
-
-            _standardError.Add(output);
         }
 
         /// <summary>
