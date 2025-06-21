@@ -310,8 +310,40 @@ namespace NanoDNA.ProcessRunner
         public void RunCommand(string command, bool displaySTDOutput = false, bool displaySTDError = false)
         {
             _processStartInfo.Arguments = GetApplicationArguments(Application, command);
-            
-            using (Process process = new Process())
+
+
+            using (Process? process = Process.Start(_processStartInfo))
+            {
+                if (process == null)
+                    return;
+
+                process.OutputDataReceived += (s, e) =>
+                {
+                    string? output = e.Data;
+
+                    if (displaySTDOutput && output != null)
+                        Console.WriteLine(output);
+                };
+
+                process.ErrorDataReceived += (s, e) =>
+                {
+                    string? error = e.Data;
+
+                    if (displaySTDError && error != null)
+                        Console.WriteLine(error);
+                };
+
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
+                process.WaitForExit();
+
+                if (process.ExitCode != 0)
+                    throw new Exception($"Command exited with code {process.ExitCode}: {command}");
+
+            }
+
+
+            /*using (Process process = new Process())
             {
                 process.StartInfo = _processStartInfo;
                 process.Start();
@@ -352,7 +384,7 @@ namespace NanoDNA.ProcessRunner
 
                 if (process.ExitCode != 0)
                     throw new Exception($"Command exited with code {process.ExitCode}: {command}");
-            }
+            }*/
         }
 
         /// <summary>
@@ -388,7 +420,7 @@ namespace NanoDNA.ProcessRunner
             _processStartInfo.Arguments = GetApplicationArguments(Application, command);
             _standardOutput.Clear();
             _standardError.Clear();
-            
+
             using (Process process = new Process())
             {
                 process.StartInfo = _processStartInfo;
