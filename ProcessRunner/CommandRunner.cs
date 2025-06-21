@@ -326,50 +326,6 @@ namespace NanoDNA.ProcessRunner
                 if (process.ExitCode != 0)
                     throw new Exception($"Command exited with code {process.ExitCode}: {command}");
             }
-
-
-            /*using (Process process = new Process())
-            {
-                process.StartInfo = _processStartInfo;
-                process.Start();
-
-                if (_stdOutputRedirect)
-                {
-                    while (!process.StandardOutput.EndOfStream)
-                    {
-                        string line = process.StandardOutput.ReadLine();
-
-                        if (line == null)
-                            continue;
-
-                        _standardOutput.Add(line);
-
-                        if (displaySTDOutput)
-                            Console.WriteLine(line);
-                    }
-                }
-
-                if (_stdErrorRedirect)
-                {
-                    while (!process.StandardError.EndOfStream)
-                    {
-                        string line = process.StandardError.ReadLine();
-
-                        if (line == null)
-                            continue;
-
-                        _standardError.Add(line);
-
-                        if (displaySTDError)
-                            Console.WriteLine(line);
-                    }
-                }
-
-                process.WaitForExit();
-
-                if (process.ExitCode != 0)
-                    throw new Exception($"Command exited with code {process.ExitCode}: {command}");
-            }*/
         }
 
         /// <summary>
@@ -462,57 +418,6 @@ namespace NanoDNA.ProcessRunner
                         throw new Exception($"Command exited with code {process.ExitCode}: {command}");
                 }
             });
-
-/*
-            using (Process process = new Process())
-            {
-                process.StartInfo = _processStartInfo;
-                process.Start();
-
-                Task outputTask = Task.Run(async () =>
-                {
-                    if (!_stdOutputRedirect)
-                        return;
-
-                    while (!process.StandardOutput.EndOfStream)
-                    {
-                        string? line = await process.StandardOutput.ReadLineAsync();
-
-                        if (line == null)
-                            continue;
-
-                        _standardOutput.Add(line);
-
-                        if (displaySTDOutput)
-                            Console.WriteLine(line);
-                    }
-                });
-
-                Task errorTask = Task.Run(async () =>
-                {
-                    if (!_stdErrorRedirect)
-                        return;
-
-                    while (!process.StandardError.EndOfStream)
-                    {
-                        string? line = await process.StandardError.ReadLineAsync();
-
-                        if (line == null)
-                            continue;
-
-                        _standardError.Add(line);
-
-                        if (displaySTDError)
-                            Console.WriteLine(line);
-                    }
-                });
-
-                await Task.WhenAll(outputTask, errorTask);
-                await process.WaitForExitAsync();
-
-                if (process.ExitCode != 0 && _stdErrorRedirect)
-                    throw new Exception($"Command exited with code {process.ExitCode}: {command}");
-            }*/
         }
     }
 }
