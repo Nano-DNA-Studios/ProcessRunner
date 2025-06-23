@@ -3,6 +3,7 @@ using System.IO;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using NLog;
 
 namespace NanoDNA.ProcessRunner
 {
@@ -11,6 +12,11 @@ namespace NanoDNA.ProcessRunner
     /// </summary>
     public class CommandRunner
     {
+        /// <summary>
+        /// NLog Logger instance for the Class. Used to Log various levels of Information within the Library
+        /// </summary>
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
         /// <summary>
         /// Specifies the Set of Values to use when Starting a Process.
         /// </summary>
@@ -76,6 +82,8 @@ namespace NanoDNA.ProcessRunner
             ProcessStartInfo.RedirectStandardError = _stdErrorRedirect;
             ProcessStartInfo.CreateNoWindow = true;
             ProcessStartInfo.UseShellExecute = false;
+
+            Logger.Debug($"Command Runner Initialized (App : {ProcessStartInfo.FileName})");
         }
 
         /// <summary>
@@ -88,13 +96,14 @@ namespace NanoDNA.ProcessRunner
         {
             ProcessStartInfo = new ProcessStartInfo();
 
-            if (Enum.TryParse(applicationName, out ProcessApplication app))
+            if (!Enum.TryParse(applicationName, out ProcessApplication app))
             {
-                Application = app;
-                ProcessStartInfo.FileName = GetApplicationPath(app);
-            }
-            else
+                Logger.Error($"Invalid Process Application: {applicationName}");
                 throw new ArgumentException($"Invalid Process Application: {applicationName}");
+            }
+
+            Application = app;
+            ProcessStartInfo.FileName = GetApplicationPath(app);
 
             _stdOutputRedirect = stdOutRedirect;
             _stdErrorRedirect = stdErrRedirect;
@@ -106,6 +115,8 @@ namespace NanoDNA.ProcessRunner
             ProcessStartInfo.RedirectStandardError = _stdErrorRedirect;
             ProcessStartInfo.CreateNoWindow = true;
             ProcessStartInfo.UseShellExecute = false;
+
+            Logger.Debug($"Command Runner Initialized (App : {ProcessStartInfo.FileName})");
         }
 
         /// <summary>
@@ -127,6 +138,8 @@ namespace NanoDNA.ProcessRunner
             ProcessStartInfo.UseShellExecute = false;
 
             SetOSDefaultApp();
+
+            Logger.Debug($"Command Runner Initialized (App : {ProcessStartInfo.FileName})");
         }
 
         /// <summary>
@@ -143,6 +156,8 @@ namespace NanoDNA.ProcessRunner
             _standardError = new List<string>();
 
             SetOSDefaultApp();
+
+            Logger.Debug($"Command Runner Initialized (App : {ProcessStartInfo.FileName})");
         }
 
         /// <summary>
@@ -157,9 +172,14 @@ namespace NanoDNA.ProcessRunner
             else if (OperatingSystem.IsMacOS())
                 Application = ProcessApplication.Sh;
             else
+            {
+                Logger.Error($"Unsupported Operating System: {Environment.OSVersion.Platform}");
                 throw new NotSupportedException($"Unsupported OS");
+            }
 
             ProcessStartInfo.FileName = GetApplicationPath(Application);
+
+            Logger.Debug($"Setting Default OS Application : {ProcessStartInfo.FileName}");
         }
 
         /// <summary>
@@ -191,6 +211,8 @@ namespace NanoDNA.ProcessRunner
         {
             _stdOutputRedirect = redirectState;
             ProcessStartInfo.RedirectStandardOutput = redirectState;
+
+            Logger.Debug($"STD Output Redirect : {redirectState}");
         }
 
         /// <summary>
@@ -201,6 +223,8 @@ namespace NanoDNA.ProcessRunner
         {
             _stdErrorRedirect = redirectState;
             ProcessStartInfo.RedirectStandardError = redirectState;
+
+            Logger.Debug($"STD Error Redirect : {redirectState}");
         }
 
         /// <summary>
@@ -213,6 +237,8 @@ namespace NanoDNA.ProcessRunner
                 throw new DirectoryNotFoundException("Directory does not exist: " + directory);
 
             ProcessStartInfo.WorkingDirectory = directory;
+
+            Logger.Debug($"Working Directory Set : {directory}");
         }
 
         /// <summary>
@@ -243,6 +269,8 @@ namespace NanoDNA.ProcessRunner
                         return "/bin/sh";
                 }
             }
+
+            Logger.Error($"CLI Application not Supported : {application}");
 
             throw new NotSupportedException($"Command Line Application is not Supported : {application}");
         }
@@ -290,7 +318,10 @@ namespace NanoDNA.ProcessRunner
             catch (Exception ex)
             {
                 if (displaySTDError)
-                    Console.WriteLine($"Error Running Command: {ex.Message} \n {ex.StackTrace}");
+                {
+                    Logger.Error($"Error Occured While Running Command : {command}\nMessage : {ex.Message}\nStack Trace : {ex.StackTrace}");
+                    Console.WriteLine($"Error Occured While Running Command : {command}\nMessage : {ex.Message}\nStack Trace : {ex.StackTrace}");
+                }
 
                 return false;
             }
@@ -318,8 +349,14 @@ namespace NanoDNA.ProcessRunner
                 process.BeginErrorReadLine();
                 process.WaitForExit();
 
-                if (process.ExitCode != 0)
-                    throw new Exception($"Command exited with code {process.ExitCode}: {command}");
+                if (process.ExitCode == 0)
+                {
+                    Logger.Debug($"Successfully Ran Command : {command}");
+                    return;
+                }
+
+                Logger.Error($"Command exited with code {process.ExitCode}: {command}");
+                throw new Exception($"Command exited with code {process.ExitCode}: {command}");
             }
         }
 
@@ -377,7 +414,10 @@ namespace NanoDNA.ProcessRunner
             catch (Exception ex)
             {
                 if (displaySTDError)
-                    Console.WriteLine($"Error Running Command: {ex.Message} \n {ex.StackTrace}");
+                {
+                    Logger.Error($"Error Occured While Running Command : {command}\nMessage : {ex.Message}\nStack Trace : {ex.StackTrace}");
+                    Console.WriteLine($"Error Occured While Running Command : {command}\nMessage : {ex.Message}\nStack Trace : {ex.StackTrace}");
+                }
 
                 return false;
             }
@@ -409,8 +449,14 @@ namespace NanoDNA.ProcessRunner
                     process.BeginErrorReadLine();
                     process.WaitForExit();
 
-                    if (process.ExitCode != 0)
-                        throw new Exception($"Command exited with code {process.ExitCode}: {command}");
+                    if (process.ExitCode == 0)
+                    {
+                        Logger.Debug($"Successfully Ran Command : {command}");
+                        return;
+                    }
+
+                    Logger.Error($"Command exited with code {process.ExitCode}: {command}");
+                    throw new Exception($"Command exited with code {process.ExitCode}: {command}");
                 }
             });
         }
