@@ -29,10 +29,10 @@
 		<None Include="..\.github\workflows\publish.yml" Link="Workflows\publish.yml" />
 		<None Include="..\.github\workflows\test.yml" Link="Workflows\test.yml" />
 	</ItemGroup>
-	
+
 	<!-- NuGet Package References -->
 	<ItemGroup>
-	  <PackageReference Include="NLog" Version="6.0.0" />
+		<PackageReference Include="NLog" Version="6.0.0" />
 	</ItemGroup>
 
 </Project>
