@@ -179,7 +179,7 @@ namespace NanoDNA.ProcessRunner
 
             ProcessStartInfo.FileName = GetApplicationPath(Application);
 
-            Logger.Debug($"Setting Default OS Application : {ProcessStartInfo.FileName}");
+            Logger.Debug($"Command Runner Initialized (App : {ProcessStartInfo.FileName})");
         }
 
         /// <summary>
@@ -212,7 +212,7 @@ namespace NanoDNA.ProcessRunner
             _stdOutputRedirect = redirectState;
             ProcessStartInfo.RedirectStandardOutput = redirectState;
 
-            Logger.Debug($"STD Output Redirect : {redirectState}");
+            Logger.Info($"STD Output Redirect : {redirectState}");
         }
 
         /// <summary>
@@ -224,7 +224,7 @@ namespace NanoDNA.ProcessRunner
             _stdErrorRedirect = redirectState;
             ProcessStartInfo.RedirectStandardError = redirectState;
 
-            Logger.Debug($"STD Error Redirect : {redirectState}");
+            Logger.Info($"STD Error Redirect : {redirectState}");
         }
 
         /// <summary>
@@ -238,7 +238,7 @@ namespace NanoDNA.ProcessRunner
 
             ProcessStartInfo.WorkingDirectory = directory;
 
-            Logger.Debug($"Working Directory Set : {directory}");
+            Logger.Info($"Working Directory Set : {directory}");
         }
 
         /// <summary>
@@ -337,10 +337,16 @@ namespace NanoDNA.ProcessRunner
         {
             ProcessStartInfo.Arguments = GetApplicationArguments(Application, command);
 
+            Logger.Info($"Running Command : {command}");
+
             using (Process? process = Process.Start(ProcessStartInfo))
             {
                 if (process == null)
+                {
+                    Logger.Error($"Process was Null : {command}");
                     return;
+                }
+
 
                 process.OutputDataReceived += (s, e) => STDOutputReceived(s, e, displaySTDOutput);
                 process.ErrorDataReceived += (s, e) => STDErrorReceived(s, e, displaySTDError);
@@ -351,7 +357,7 @@ namespace NanoDNA.ProcessRunner
 
                 if (process.ExitCode == 0)
                 {
-                    Logger.Debug($"Successfully Ran Command : {command}");
+                    Logger.Info($"Successfully Ran Command : {command}");
                     return;
                 }
 
@@ -435,12 +441,17 @@ namespace NanoDNA.ProcessRunner
             _standardOutput.Clear();
             _standardError.Clear();
 
+            Logger.Info($"Running Command : {command}");
+
             await Task.Run(() =>
             {
                 using (Process? process = Process.Start(ProcessStartInfo))
                 {
                     if (process == null)
+                    {
+                        Logger.Error($"Process was Null : {command}");
                         return;
+                    }
 
                     process.OutputDataReceived += (s, e) => STDOutputReceived(s, e, displaySTDOutput);
                     process.ErrorDataReceived += (s, e) => STDErrorReceived(s, e, displaySTDError);
@@ -451,7 +462,7 @@ namespace NanoDNA.ProcessRunner
 
                     if (process.ExitCode == 0)
                     {
-                        Logger.Debug($"Successfully Ran Command : {command}");
+                        Logger.Info($"Successfully Ran Command : {command}");
                         return;
                     }
 
