@@ -337,7 +337,7 @@ namespace NanoDNA.ProcessRunner
         {
             ProcessStartInfo.Arguments = GetApplicationArguments(Application, command);
 
-            Logger.Info($"Running Command : {command}");
+            Logger.Debug($"Running Command : {command}");
 
             using (Process? process = Process.Start(ProcessStartInfo))
             {
@@ -347,17 +347,24 @@ namespace NanoDNA.ProcessRunner
                     return;
                 }
 
-
-                process.OutputDataReceived += (s, e) => STDOutputReceived(s, e, displaySTDOutput);
-                process.ErrorDataReceived += (s, e) => STDErrorReceived(s, e, displaySTDError);
+                process.OutputDataReceived += STDOutputReceived;
+                process.ErrorDataReceived += STDErrorReceived;
 
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
                 process.WaitForExit();
 
+                if (displaySTDOutput)
+                    foreach (string line in StandardOutput)
+                        Console.WriteLine(line);
+
+                if (displaySTDError)
+                    foreach (string line in StandardError)
+                        Console.WriteLine(line);
+
                 if (process.ExitCode == 0)
                 {
-                    Logger.Info($"Successfully Ran Command : {command}");
+                    Logger.Debug($"Successfully Ran Command : {command}");
                     return;
                 }
 
@@ -371,8 +378,7 @@ namespace NanoDNA.ProcessRunner
         /// </summary>
         /// <param name="sender">Object Sending the Event</param>
         /// <param name="data">Data Sent by the Object</param>
-        /// <param name="displaySTDOutput">Toggle for displaying the STD Output to the Users Console</param>
-        private void STDOutputReceived(object sender, DataReceivedEventArgs data, bool displaySTDOutput)
+        private void STDOutputReceived(object sender, DataReceivedEventArgs data)
         {
             string? output = data.Data;
 
@@ -380,9 +386,6 @@ namespace NanoDNA.ProcessRunner
                 return;
 
             _standardOutput.Add(output);
-
-            if (displaySTDOutput)
-                Console.WriteLine(output);
         }
 
         /// <summary>
@@ -390,8 +393,7 @@ namespace NanoDNA.ProcessRunner
         /// </summary>
         /// <param name="sender">Object Sending the Event</param>
         /// <param name="data">Data Sent by the Object</param>
-        /// <param name="displaySTDError">Toggle for displaying the STD Error to the Users Console</param>
-        private void STDErrorReceived(object sender, DataReceivedEventArgs data, bool displaySTDError)
+        private void STDErrorReceived(object sender, DataReceivedEventArgs data)
         {
             string? output = data.Data;
 
@@ -399,9 +401,6 @@ namespace NanoDNA.ProcessRunner
                 return;
 
             _standardError.Add(output);
-
-            if (displaySTDError)
-                Console.WriteLine(output);
         }
 
         /// <summary>
@@ -441,7 +440,7 @@ namespace NanoDNA.ProcessRunner
             _standardOutput.Clear();
             _standardError.Clear();
 
-            Logger.Info($"Running Command : {command}");
+            Logger.Debug($"Running Command : {command}");
 
             await Task.Run(() =>
             {
@@ -453,16 +452,24 @@ namespace NanoDNA.ProcessRunner
                         return;
                     }
 
-                    process.OutputDataReceived += (s, e) => STDOutputReceived(s, e, displaySTDOutput);
-                    process.ErrorDataReceived += (s, e) => STDErrorReceived(s, e, displaySTDError);
+                    process.OutputDataReceived += STDOutputReceived;
+                    process.ErrorDataReceived += STDErrorReceived;
 
                     process.BeginOutputReadLine();
                     process.BeginErrorReadLine();
                     process.WaitForExit();
 
+                    if  (displaySTDOutput)
+                        foreach (string line in StandardOutput)
+                            Console.WriteLine(line);
+
+                    if (displaySTDError)
+                        foreach (string line in StandardError)
+                            Console.WriteLine(line);
+
                     if (process.ExitCode == 0)
                     {
-                        Logger.Info($"Successfully Ran Command : {command}");
+                        Logger.Debug($"Successfully Ran Command : {command}");
                         return;
                     }
 
