@@ -178,8 +178,6 @@ namespace NanoDNA.ProcessRunner
             }
 
             ProcessStartInfo.FileName = GetApplicationPath(Application);
-
-            Logger.Debug($"Command Runner Initialized (App : {ProcessStartInfo.FileName})");
         }
 
         /// <summary>
@@ -212,7 +210,7 @@ namespace NanoDNA.ProcessRunner
             _stdOutputRedirect = redirectState;
             ProcessStartInfo.RedirectStandardOutput = redirectState;
 
-            Logger.Info($"STD Output Redirect : {redirectState}");
+            Logger.Debug($"STD Output Redirect : {redirectState}");
         }
 
         /// <summary>
@@ -224,7 +222,7 @@ namespace NanoDNA.ProcessRunner
             _stdErrorRedirect = redirectState;
             ProcessStartInfo.RedirectStandardError = redirectState;
 
-            Logger.Info($"STD Error Redirect : {redirectState}");
+            Logger.Debug($"STD Error Redirect : {redirectState}");
         }
 
         /// <summary>
@@ -238,7 +236,7 @@ namespace NanoDNA.ProcessRunner
 
             ProcessStartInfo.WorkingDirectory = directory;
 
-            Logger.Info($"Working Directory Set : {directory}");
+            Logger.Debug($"Working Directory Set : {directory}");
         }
 
         /// <summary>
@@ -469,7 +467,7 @@ namespace NanoDNA.ProcessRunner
 
                     if (process.ExitCode == 0)
                     {
-                        Logger.Debug($"Successfully Ran Command : {command}");
+                        Logger.Debug($"Command Succeeded : {command}");
                         return;
                     }
 
