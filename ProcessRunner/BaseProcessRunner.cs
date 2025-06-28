@@ -171,7 +171,7 @@ namespace NanoDNA.ProcessRunner
         }
 
         /// <inheritdoc/>
-        public ProcessResult Run(string args)
+        public virtual ProcessResult Run(string args)
         {
             StartInfo.Arguments = args;
 
@@ -208,15 +208,15 @@ namespace NanoDNA.ProcessRunner
         }
 
         /// <inheritdoc/>
-        public async Task<ProcessResult> RunAsync(string args) => await Task.Run(() => Run(args));
+        public virtual async Task<ProcessResult> RunAsync(string args) => await Task.Run(() => this.Run(args));
 
         /// <inheritdoc/>
-        public bool TryRun (string args) => Run(args).Status == ProcessStatus.Success;
+        public virtual bool TryRun (string args) => this.Run(args).Status == ProcessStatus.Success;
 
         /// <inheritdoc/>
-        public async Task<bool> TryRunAsync(string args)
+        public virtual async Task<bool> TryRunAsync(string args)
         {
-            ProcessResult result = await RunAsync(args);
+            ProcessResult result = await this.RunAsync(args);
             return result.Status == ProcessStatus.Success;
         }
     }

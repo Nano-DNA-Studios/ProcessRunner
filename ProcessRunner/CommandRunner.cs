@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using NLog;
 
 namespace NanoDNA.ProcessRunner
@@ -23,8 +24,8 @@ namespace NanoDNA.ProcessRunner
         /// Initializes a new Instance of <see cref="CommandRunner"/> using <see cref="ProcessApplication"/>.
         /// </summary>
         /// <param name="application">Process Application the Command will run through.</param>
-        /// <param name="stdOutRedirect">Redirect the Standard Output and Store in the <see cref="STDOutput"/> Property.</param>
-        /// <param name="stdErrRedirect">Redirect the Standard Error and Store in the <see cref="STDError"/> Property</param>
+        /// <param name="stdOutRedirect">Redirect the Standard Output and Store in the <see cref="BaseProcessRunner.STDOutput"/> Property.</param>
+        /// <param name="stdErrRedirect">Redirect the Standard Error and Store in the <see cref="BaseProcessRunner.STDError"/> Property</param>
         public CommandRunner(ProcessApplication application, bool stdOutRedirect = true, bool stdErrRedirect = true) : base(GetApplicationPath(application), stdOutRedirect, stdErrRedirect)
         {
             Application = application;
@@ -34,18 +35,18 @@ namespace NanoDNA.ProcessRunner
         /// Initializes a new Instance of <see cref="CommandRunner"/> using the String Name of the <see cref="ProcessApplication"/>.
         /// </summary>
         /// <param name="applicationName">String Name of the Process Application Enum the Command will run through.</param>
-        /// <param name="stdOutRedirect">Redirect the Standard Output and Store in the <see cref="STDOutput"/> Property.</param>
-        /// <param name="stdErrRedirect">Redirect the Standard Error and Store in the <see cref="STDError"/> Property</param>
+        /// <param name="stdOutRedirect">Redirect the Standard Output and Store in the <see cref="BaseProcessRunner.STDOutput"/> Property.</param>
+        /// <param name="stdErrRedirect">Redirect the Standard Error and Store in the <see cref="BaseProcessRunner.STDError"/> Property</param>
         public CommandRunner(string applicationName, bool stdOutRedirect = true, bool stdErrRedirect = true) : base(GetApplicationPath(applicationName), stdOutRedirect, stdErrRedirect)
         {
             Application = GetApplicationFromName(applicationName);
         }
-        
+
         /// <summary>
         /// Initializes a new Instance of <see cref="CommandRunner"/>. Uses the default Process Application based on the devices Operating System.
         /// </summary>
-        /// <param name="stdOutRedirect">Redirect the Standard Output and Store in the <see cref="STDOutput"/> Property.</param>
-        /// <param name="stdErrRedirect">Redirect the Standard Error and Store in the <see cref="STDError"/> Property</param>
+        /// <param name="stdOutRedirect">Redirect the Standard Output and Store in the <see cref="BaseProcessRunner.STDOutput"/> Property.</param>
+        /// <param name="stdErrRedirect">Redirect the Standard Error and Store in the <see cref="BaseProcessRunner.STDError"/> Property</param>
         public CommandRunner(bool stdOutRedirect = true, bool stdErrRedirect = true) : base(GetApplicationPath(), stdOutRedirect, stdErrRedirect)
         {
             Application = GetDefaultOSApplication();
@@ -57,40 +58,29 @@ namespace NanoDNA.ProcessRunner
         /// <param name="startInfo">Process Info defined by the User</param>
         public CommandRunner(ProcessStartInfo startInfo) : base(startInfo)
         {
-            Application = GetApplicationFromName(startInfo.FileName);
+            Application = GetApplicationFromName(GetApplicationPath(startInfo.FileName));
         }
 
         private static ProcessApplication GetApplicationFromName(string applicationName)
         {
-            if (!Enum.TryParse(applicationName, out ProcessApplication app))
+            if (Enum.TryParse(applicationName, out ProcessApplication app))
+                return app;
+
+            switch (applicationName.ToLower())
             {
-                Logger.Error($"Invalid Process Application: {applicationName}");
-                throw new ArgumentException($"Invalid Process Application: {applicationName}");
+                case "cmd.exe":
+                    return ProcessApplication.CMD;
+                case "powershell.exe":
+                    return ProcessApplication.PowerShell;
+                case "/bin/bash":
+                    return ProcessApplication.Bash;
+                case "/bin/sh":
+                    return ProcessApplication.Sh;
             }
 
-            return app;
+            Logger.Error($"Invalid Process Application: {applicationName}");
+            throw new ArgumentException($"Invalid Process Application: {applicationName}");
         }
-
-
-        /// <summary>
-        /// Defines the Default Application based on the devices OS.
-        /// </summary>
-        /*private void SetOSDefaultApp()
-        {
-            if (OperatingSystem.IsWindows())
-                Application = ProcessApplication.CMD;
-            else if (OperatingSystem.IsLinux())
-                Application = ProcessApplication.Bash;
-            else if (OperatingSystem.IsMacOS())
-                Application = ProcessApplication.Sh;
-            else
-            {
-                Logger.Error($"Unsupported Operating System: {Environment.OSVersion.Platform}");
-                throw new NotSupportedException($"Unsupported OS");
-            }
-
-            StartInfo.FileName = GetApplicationPath(Application);
-        }*/
 
         /// <summary>
         /// Gets the devices Default <see cref="ProcessApplication"/> based on the Operating System.
@@ -162,6 +152,7 @@ namespace NanoDNA.ProcessRunner
             switch (application)
             {
                 case ProcessApplication.CMD:
+                    Logger.Info("Inputting Command");
                     return $"/c {command}";
 
                 case ProcessApplication.PowerShell:
@@ -201,6 +192,35 @@ namespace NanoDNA.ProcessRunner
 
                 return false;
             }
+        }*/
+
+        /// <inheritdoc/>
+        public override ProcessResult Run(string args)
+        {
+            Logger.Info("Command Runner Run");
+            return base.Run(GetApplicationArguments(Application, args));
+        }
+
+
+        /*/// <inheritdoc/>
+        public override async Task<ProcessResult> RunAsync(string args)
+        {
+            Logger.Info("Command Runner RunAsync");
+            return await base.RunAsync(args);
+        }
+
+        /// <inheritdoc/>
+        public override bool TryRun(string args)
+        {
+            Logger.Info("Command Runner TryRun");
+            return base.TryRun(args);
+        }
+
+        /// <inheritdoc/>
+        public override async Task<bool> TryRunAsync(string args)
+        {
+            Logger.Info("Command Runner TryRunAsync");
+            return await base.TryRunAsync(args);
         }*/
 
         /// <summary>

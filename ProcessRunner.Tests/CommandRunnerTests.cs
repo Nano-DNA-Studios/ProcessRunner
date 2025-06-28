@@ -301,19 +301,17 @@ namespace NanoDNA.ProcessRunner.Tests
             }
 
             CommandRunner commandRunner = new CommandRunner(application);
+            
+            ProcessResult result = commandRunner.Run(command);
 
-            try
-            {
-                commandRunner.Run(command);
-                Assert.Fail("No Exception Thrown");
-            } catch (Exception e)
-            {
-                Assert.That(commandRunner.STDOutput.Length, Is.EqualTo(0));
-                Assert.That(commandRunner.STDError.Length, Is.GreaterThan(0));
+            if (result.Status != ProcessStatus.Failed)
+                Assert.Fail($"Command was supposed to fail : {command}");
+            
+            Assert.That(commandRunner.STDOutput.Length, Is.EqualTo(0));
+            Assert.That(commandRunner.STDError.Length, Is.GreaterThan(0));
 
-                string errorOutput = string.Join("\n", commandRunner.STDError).ToLower();
-                Assert.That(errorOutput, Does.Contain("not").And.Contain("found").Or.Contain("recognized"));
-            }
+            string errorOutput = string.Join("\n", commandRunner.STDError).ToLower();
+            Assert.That(errorOutput, Does.Contain("not").And.Contain("found").Or.Contain("recognized"));
         }
 
         /// <summary>
@@ -336,7 +334,10 @@ namespace NanoDNA.ProcessRunner.Tests
 
             CommandRunner commandRunner = new CommandRunner(application);
 
-            await commandRunner.RunAsync(command);
+            ProcessResult result = await commandRunner.RunAsync(command);
+
+            if (result.Status == ProcessStatus.Failed)
+                Assert.Fail($"Command was supposed to succeed : {command}\n{result.Message}");
 
             Assert.That(commandRunner.STDOutput.Length, Is.GreaterThan(0));
             Assert.That(commandRunner.STDError.Length, Is.EqualTo(0));
@@ -362,18 +363,17 @@ namespace NanoDNA.ProcessRunner.Tests
 
             CommandRunner commandRunner = new CommandRunner(application);
 
-            try
-            {
-                await commandRunner.RunAsync(command);
-                Assert.Fail($"Command was supposed to fail : {command}");
-            } catch (Exception e)
-            {
-                Assert.That(commandRunner.STDOutput.Length, Is.EqualTo(0));
-                Assert.That(commandRunner.STDError.Length, Is.GreaterThan(0));
+            ProcessResult result = await commandRunner.RunAsync(command);
 
-                string errorOutput = string.Join("\n", commandRunner.STDError).ToLower();
-                Assert.That(errorOutput, Does.Contain("not").And.Contain("found").Or.Contain("recognized"));
-            }
+            if (result.Status != ProcessStatus.Failed)
+                Assert.Fail($"Command was supposed to fail : {command}");
+
+            Assert.That(result.Status, Is.EqualTo(ProcessStatus.Failed));
+            Assert.That(commandRunner.STDOutput.Length, Is.EqualTo(0));
+            Assert.That(commandRunner.STDError.Length, Is.GreaterThan(0));
+
+            string errorOutput = string.Join("\n", commandRunner.STDError).ToLower();
+            Assert.That(errorOutput, Does.Contain("not").And.Contain("found").Or.Contain("recognized"));
         }
 
         /// <summary>
