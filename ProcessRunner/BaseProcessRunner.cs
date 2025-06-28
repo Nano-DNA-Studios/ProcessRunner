@@ -104,7 +104,7 @@ namespace NanoDNA.ProcessRunner
             };
         }
 
-        private void Initialize (ProcessStartInfo startInfo)
+        private void Initialize(ProcessStartInfo startInfo)
         {
             StartInfo = startInfo;
         }
@@ -217,7 +217,7 @@ namespace NanoDNA.ProcessRunner
         public virtual async Task<Result<ProcessResult>> RunAsync(string args) => await Task.Run(() => this.Run(args));
 
         /// <inheritdoc/>
-        public virtual bool TryRun (string args) => this.Run(args).Content.Status == ProcessStatus.Success;
+        public virtual bool TryRun(string args) => this.Run(args).Content.Status == ProcessStatus.Success;
 
         /// <inheritdoc/>
         public virtual async Task<bool> TryRunAsync(string args)
