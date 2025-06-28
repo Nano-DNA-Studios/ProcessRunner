@@ -56,9 +56,14 @@ namespace NanoDNA.ProcessRunner
         /// </summary>
         protected List<string> _stdError { get; set; }
 
-
+        /// <summary>
+        /// Occurs when the standard output of the process receives data.
+        /// </summary>
         public event DataReceivedEventHandler? STDOutputReceived;
 
+        /// <summary>
+        /// Occurs when the standard error of the process receives data.
+        /// </summary>
         public event DataReceivedEventHandler? STDErrorReceived;
 
         /// <summary>

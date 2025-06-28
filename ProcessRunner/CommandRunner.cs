@@ -5,17 +5,17 @@ using NLog;
 namespace NanoDNA.ProcessRunner
 {
     /// <summary>
-    /// Used to run CLI Commands through the specified <see cref="ProcessApplication"/>.
+    /// Used as a Wrapper to simplify running Commands through a default supported <see cref="ProcessApplication"/> such as CMD, PowerShell, Bash, or Sh.
     /// </summary>
     public class CommandRunner : BaseProcessRunner
     {
         /// <summary>
-        /// NLog Logger instance for the Class. Used to Log various levels of Information within the Library
+        /// Logger instance for the CommandRunner class, used for logging errors and information for debugging and transparency.
         /// </summary>
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         /// <summary>
-        /// Process Application the Command will run through.
+        /// The Command Line Application the Command runs through.
         /// </summary>
         public ProcessApplication Application { get; }
 
@@ -38,7 +38,7 @@ namespace NanoDNA.ProcessRunner
         /// <param name="stdErrRedirect">Redirect the Standard Error and Store in the <see cref="BaseProcessRunner.STDError"/> Property</param>
         public CommandRunner(string applicationName, bool stdOutRedirect = true, bool stdErrRedirect = true) : base(GetApplicationPath(applicationName), stdOutRedirect, stdErrRedirect)
         {
-            Application = GetApplicationFromName(applicationName);
+            Application = GetApplicationFromNameOrPath(applicationName);
         }
 
         /// <summary>
@@ -57,10 +57,16 @@ namespace NanoDNA.ProcessRunner
         /// <param name="startInfo">Process Info defined by the User</param>
         public CommandRunner(ProcessStartInfo startInfo) : base(startInfo)
         {
-            Application = GetApplicationFromName(GetApplicationPath(startInfo.FileName));
+            Application = GetApplicationFromNameOrPath(GetApplicationPath(startInfo.FileName));
         }
 
-        private static ProcessApplication GetApplicationFromName(string applicationName)
+        /// <summary>
+        /// Gets the <see cref="ProcessApplication"/> Enum from the String Name or Path to the Application.
+        /// </summary>
+        /// <param name="applicationName">String name of the Application</param>
+        /// <returns><see cref="ProcessApplication"/> Enum corresponding to the Application Name</returns>
+        /// <exception cref="ArgumentException">Thrown if the provided</exception>
+        private static ProcessApplication GetApplicationFromNameOrPath(string applicationName)
         {
             if (Enum.TryParse(applicationName, out ProcessApplication app))
                 return app;
@@ -113,7 +119,7 @@ namespace NanoDNA.ProcessRunner
         /// </summary>
         /// <param name="applicationName">String name of the application</param>
         /// <returns>Path to the <see cref="ProcessApplication"/> executable</returns>
-        private static string GetApplicationPath(string applicationName) => GetApplicationPath(GetApplicationFromName(applicationName));
+        private static string GetApplicationPath(string applicationName) => GetApplicationPath(GetApplicationFromNameOrPath(applicationName));
 
         /// <summary>
         /// Gets the Path to the Application executable based on the <see cref="ProcessApplication"/> Enum.
@@ -150,7 +156,7 @@ namespace NanoDNA.ProcessRunner
         }
 
         /// <summary>
-        /// Gets the Arguments that will be passed to the Application based on the Operating System.
+        /// Gets the formatted Arguments used by the Process Application to run Commands.
         /// </summary>
         /// <param name="application"> <see cref="ProcessApplication"/> that will run the Command.</param>
         /// <param name="command">Command to Run.</param>
@@ -160,18 +166,13 @@ namespace NanoDNA.ProcessRunner
             switch (application)
             {
                 case ProcessApplication.CMD:
-                    Logger.Info("Inputting Command");
                     return $"/c {command}";
-
                 case ProcessApplication.PowerShell:
                     return $"-Command \"{command}\"";
-
                 case ProcessApplication.Bash:
                     return $"-c \"{command}\"";
-
                 case ProcessApplication.Sh:
                     return $"-c \"{command}\"";
-
                 default:
                     throw new NotSupportedException($"Unsupported Application: {application}");
             }
@@ -180,7 +181,6 @@ namespace NanoDNA.ProcessRunner
         /// <inheritdoc/>
         public override ProcessResult Run(string args)
         {
-            Logger.Info("Command Runner Run");
             return base.Run(GetApplicationArguments(Application, args));
         }
     }
