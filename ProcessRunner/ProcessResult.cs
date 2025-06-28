@@ -19,7 +19,7 @@ namespace NanoDNA.ProcessRunner
         /// <summary>
         /// Gets the message associated with the process execution result, if any.
         /// </summary>
-        public string? Message { get; }
+        //public string? Message { get; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ProcessResult"/> class with the specified exit code, success status, and optional message.
@@ -27,11 +27,10 @@ namespace NanoDNA.ProcessRunner
         /// <param name="exitCode">The exit code of the execution</param>
         /// <param name="status">The success status of the execution</param>
         /// <param name="message">Additonal message providing context to the result</param>
-        public ProcessResult(int exitCode, ProcessStatus status, string? message = null)
+        public ProcessResult(ProcessStatus status, int exitCode)
         {
-            ExitCode = exitCode;
             Status = status;
-            Message = message;
+            ExitCode = exitCode;
         }
     }
 }

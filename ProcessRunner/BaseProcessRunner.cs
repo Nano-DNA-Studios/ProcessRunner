@@ -176,7 +176,7 @@ namespace NanoDNA.ProcessRunner
         }
 
         /// <inheritdoc/>
-        public virtual ProcessResult Run(string args)
+        public virtual Result<ProcessResult> Run(string args)
         {
             StartInfo.Arguments = args;
 
@@ -189,7 +189,7 @@ namespace NanoDNA.ProcessRunner
                 if (process == null)
                 {
                     Logger.Error($"Process was Null : {command}");
-                    return new ProcessResult(FAILED_TO_RUN_EXIT_CODE, ProcessStatus.DidNotRun, "Cannot run, Process is null");
+                    return new Result<ProcessResult>(new ProcessResult(ProcessStatus.Failed, FAILED_TO_RUN_EXIT_CODE), "Process is null");
                 }
 
                 process.OutputDataReceived += STDOutputReceived;
@@ -204,25 +204,26 @@ namespace NanoDNA.ProcessRunner
                 if (process.ExitCode == 0)
                 {
                     Logger.Debug($"Successfully Ran Command : {command}");
-                    return new ProcessResult(process.ExitCode, ProcessStatus.Success, $"Command executed successfully: {command}");
+                    return new Result<ProcessResult>(new ProcessResult(ProcessStatus.Success, process.ExitCode), $"Command executed successfully: {command}");
                 }
 
                 Logger.Error($"Command exited with code {process.ExitCode}: {command}");
-                return new ProcessResult(process.ExitCode, ProcessStatus.Failed, $"Command failed with exit code {process.ExitCode}: {command}");
+
+                return new Result<ProcessResult>(new ProcessResult(ProcessStatus.Failed, process.ExitCode), $"Command ran and failed : {command}");
             }
         }
 
         /// <inheritdoc/>
-        public virtual async Task<ProcessResult> RunAsync(string args) => await Task.Run(() => this.Run(args));
+        public virtual async Task<Result<ProcessResult>> RunAsync(string args) => await Task.Run(() => this.Run(args));
 
         /// <inheritdoc/>
-        public virtual bool TryRun (string args) => this.Run(args).Status == ProcessStatus.Success;
+        public virtual bool TryRun (string args) => this.Run(args).Content.Status == ProcessStatus.Success;
 
         /// <inheritdoc/>
         public virtual async Task<bool> TryRunAsync(string args)
         {
-            ProcessResult result = await this.RunAsync(args);
-            return result.Status == ProcessStatus.Success;
+            Result<ProcessResult> result = await this.RunAsync(args);
+            return result.Content.Status == ProcessStatus.Success;
         }
     }
 }

@@ -179,7 +179,7 @@ namespace NanoDNA.ProcessRunner
         }
 
         /// <inheritdoc/>
-        public override ProcessResult Run(string args)
+        public override Result<ProcessResult> Run(string args)
         {
             return base.Run(GetApplicationArguments(Application, args));
         }

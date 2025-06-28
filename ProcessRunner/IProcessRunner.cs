@@ -58,14 +58,14 @@ namespace NanoDNA.ProcessRunner
         /// </summary>
         /// <param name="args">Arguments for the process</param>
         /// <returns>A <see cref="ProcessResult"/> containing the exit code, execution status and an optional message describing the outcome</returns>
-        public ProcessResult Run(string args);
+        public Result<ProcessResult> Run(string args);
 
         /// <summary>
         /// Runs the process asynchronously using the provided arguments.
         /// </summary>
         /// <param name="args">Arguments for the process</param>
         /// <returns>An awaitable task with a result of <see cref="ProcessResult"/> containing the exit code, execution status and an optional message describing the outcome</returns>
-        public Task<ProcessResult> RunAsync(string args);
+        public Task<Result<ProcessResult>> RunAsync(string args);
 
         /// <summary>
         /// Tries to run the process with the provided arguments and returns a boolean indicating success or failure.
