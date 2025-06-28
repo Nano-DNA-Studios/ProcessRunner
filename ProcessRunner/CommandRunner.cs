@@ -102,15 +102,25 @@ namespace NanoDNA.ProcessRunner
                 throw new NotSupportedException("Unsupported OS");
         }
 
+        /// <summary>
+        /// Gets the Path to the Application executable based on the devices Operating System default <see cref="ProcessApplication"/>.
+        /// </summary>
+        /// <returns>Path to the <see cref="ProcessApplication"/> executable</returns>
         private static string GetApplicationPath() => GetApplicationPath(GetDefaultOSApplication());
 
         /// <summary>
-        /// 
+        /// Gets the Path to the Application executable using the string name of the <see cref="ProcessApplication"/>.
         /// </summary>
-        /// <param name="applicationName"></param>
-        /// <returns></returns>
+        /// <param name="applicationName">String name of the application</param>
+        /// <returns>Path to the <see cref="ProcessApplication"/> executable</returns>
         private static string GetApplicationPath(string applicationName) => GetApplicationPath(GetApplicationFromName(applicationName));
 
+        /// <summary>
+        /// Gets the Path to the Application executable based on the <see cref="ProcessApplication"/> Enum.
+        /// </summary>
+        /// <param name="application"><see cref="ProcessApplication"/> enum choice</param>
+        /// <returns></returns>
+        /// <exception cref="NotSupportedException">Thrown if the devices Operating System is not supported</exception>
         private static string GetApplicationPath(ProcessApplication application)
         {
             if (OperatingSystem.IsWindows())
