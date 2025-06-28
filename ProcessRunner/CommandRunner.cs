@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Threading.Tasks;
 using NLog;
 
 namespace NanoDNA.ProcessRunner
@@ -112,7 +111,6 @@ namespace NanoDNA.ProcessRunner
         /// <returns></returns>
         private static string GetApplicationPath(string applicationName) => GetApplicationPath(GetApplicationFromName(applicationName));
 
-
         private static string GetApplicationPath(ProcessApplication application)
         {
             if (OperatingSystem.IsWindows())
@@ -169,181 +167,11 @@ namespace NanoDNA.ProcessRunner
             }
         }
 
-        /// <summary>
-        /// Tries to Run a Command but doesn't throw an Exception if it fails.
-        /// </summary>
-        /// <param name="command">The Command to be run through the <see cref="ProcessApplication"/>.</param>
-        /// <param name="displaySTDOutput">Display the Standard Output in the Console.</param>
-        /// <param name="displaySTDError">Display the Standard Error in the Console.</param>
-        /*public bool TryRunCommand(string command, bool displaySTDOutput = false, bool displaySTDError = false)
-        {
-            try
-            {
-                RunCommand(command, displaySTDOutput, displaySTDError);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                if (displaySTDError)
-                {
-                    Logger.Error($"Error Occured While Running Command : {command}\nMessage : {ex.Message}\nStack Trace : {ex.StackTrace}");
-                    Console.WriteLine($"Error Occured While Running Command : {command}\nMessage : {ex.Message}\nStack Trace : {ex.StackTrace}");
-                }
-
-                return false;
-            }
-        }*/
-
         /// <inheritdoc/>
         public override ProcessResult Run(string args)
         {
             Logger.Info("Command Runner Run");
             return base.Run(GetApplicationArguments(Application, args));
         }
-
-
-        /*/// <inheritdoc/>
-        public override async Task<ProcessResult> RunAsync(string args)
-        {
-            Logger.Info("Command Runner RunAsync");
-            return await base.RunAsync(args);
-        }
-
-        /// <inheritdoc/>
-        public override bool TryRun(string args)
-        {
-            Logger.Info("Command Runner TryRun");
-            return base.TryRun(args);
-        }
-
-        /// <inheritdoc/>
-        public override async Task<bool> TryRunAsync(string args)
-        {
-            Logger.Info("Command Runner TryRunAsync");
-            return await base.TryRunAsync(args);
-        }*/
-
-        /// <summary>
-        /// Runs a Command through the <see cref="ProcessApplication"/>.
-        /// </summary>
-        /// <param name="command">The Command to be run through the <see cref="ProcessApplication"/>.</param>
-        /// <param name="displaySTDOutput">Display the Standard Output in the Console.</param>
-        /// <param name="displaySTDError">Display the Standard Error in the Console.</param>
-        /*public void RunCommand(string command, bool displaySTDOutput = false, bool displaySTDError = false)
-        {
-            StartInfo.Arguments = GetApplicationArguments(Application, command);
-
-            Logger.Debug($"Running Command : {command}");
-
-            using (Process? process = Process.Start(StartInfo))
-            {
-                if (process == null)
-                {
-                    Logger.Error($"Process was Null : {command}");
-                    return;
-                }
-
-                process.OutputDataReceived += STDOutputReceived;
-                process.ErrorDataReceived += STDErrorReceived;
-
-                process.BeginOutputReadLine();
-                process.BeginErrorReadLine();
-                process.WaitForExit();
-
-                *//*if (displaySTDOutput)
-                    foreach (string line in StandardOutput)
-                        Console.WriteLine(line);
-
-                if (displaySTDError)
-                    foreach (string line in StandardError)
-                        Console.WriteLine(line);*//*
-
-                if (process.ExitCode == 0)
-                {
-                    Logger.Debug($"Successfully Ran Command : {command}");
-                    return;
-                }
-
-                Logger.Error($"Command exited with code {process.ExitCode}: {command}");
-                throw new Exception($"Command exited with code {process.ExitCode}: {command}");
-            }
-        }
-
-
-        /// <summary>
-        /// Tries to Run a Command but doesn't throw an Exception if it fails.
-        /// </summary>
-        /// <param name="command">The Command to be run through the <see cref="ProcessApplication"/>.</param>
-        /// <param name="displaySTDOutput">Display the Standard Output in the Console.</param>
-        /// <param name="displaySTDError">Display the Standard Error in the Console.</param>
-        public async Task<bool> TryRunCommandAsync(string command, bool displaySTDOutput = false, bool displaySTDError = false)
-        {
-            try
-            {
-                await RunCommandAsync(command, displaySTDOutput, displaySTDError);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                if (displaySTDError)
-                {
-                    Logger.Error($"Error Occured While Running Command : {command}\nMessage : {ex.Message}\nStack Trace : {ex.StackTrace}");
-                    Console.WriteLine($"Error Occured While Running Command : {command}\nMessage : {ex.Message}\nStack Trace : {ex.StackTrace}");
-                }
-
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// Runs a Command through the <see cref="ProcessApplication"/> Asynchronously.
-        /// </summary>
-        /// <param name="command">The Command to be run through the <see cref="ProcessApplication"/>.</param>
-        /// <param name="displaySTDOutput">Display the Standard Output in the Console.</param>
-        /// <param name="displaySTDError">Display the Standard Error in the Console.</param>
-        public async Task RunCommandAsync(string command, bool displaySTDOutput = false, bool displaySTDError = false)
-        {
-            StartInfo.Arguments = GetApplicationArguments(Application, command);
-            _standardOutput.Clear();
-            _standardError.Clear();
-
-            Logger.Debug($"Running Command : {command}");
-
-            await Task.Run(() =>
-            {
-                using (Process? process = Process.Start(StartInfo))
-                {
-                    if (process == null)
-                    {
-                        Logger.Error($"Process was Null : {command}");
-                        return;
-                    }
-
-                    process.OutputDataReceived += STDOutputReceived;
-                    process.ErrorDataReceived += STDErrorReceived;
-
-                    process.BeginOutputReadLine();
-                    process.BeginErrorReadLine();
-                    process.WaitForExit();
-
-                    if  (displaySTDOutput)
-                        foreach (string line in STDOutput)
-                            Console.WriteLine(line);
-
-                    if (displaySTDError)
-                        foreach (string line in STDError)
-                            Console.WriteLine(line);
-
-                    if (process.ExitCode == 0)
-                    {
-                        Logger.Debug($"Command Succeeded : {command}");
-                        return;
-                    }
-
-                    Logger.Error($"Command exited with code {process.ExitCode}: {command}");
-                    throw new Exception($"Command exited with code {process.ExitCode}: {command}");
-                }
-            });
-        }*/
     }
 }
