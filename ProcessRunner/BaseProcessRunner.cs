@@ -1,0 +1,223 @@
+﻿using NLog;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Threading.Tasks;
+
+namespace NanoDNA.ProcessRunner
+{
+    /// <summary>
+    /// Provides the base implementation for running system processes.
+    /// </summary>
+    public abstract class BaseProcessRunner : IProcessRunner
+    {
+        /// <summary>
+        /// Default exit code when a process fails to run or is null.
+        /// </summary>
+        private const int FAILED_TO_RUN_EXIT_CODE = -1;
+
+        /// <summary>
+        /// Instance of the Class Logger for the class.
+        /// </summary>
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
+        /// <inheritdoc />
+        public string ApplicationName => StartInfo.FileName;
+
+        /// <inheritdoc />
+        public ProcessStartInfo StartInfo { get; protected set; }
+
+        /// <inheritdoc />
+        public string WorkingDirectory => StartInfo.WorkingDirectory;
+
+        /// <inheritdoc />
+        public string[] STDOutput => _stdOutput.ToArray();
+
+        /// <inheritdoc />
+        public string[] STDError => _stdError.ToArray();
+
+        /// <summary>
+        /// Gets whether <see cref="STDOutput"/> is redirected to the console.
+        /// </summary>
+        protected bool _stdOutputRedirect => StartInfo.RedirectStandardOutput;
+
+        /// <summary>
+        /// Gets whether <see cref="STDError"/> is redirected to the console.
+        /// </summary>
+        protected bool _stdErrorRedirect => StartInfo.RedirectStandardError;
+
+        /// <summary>
+        /// Stores the standard output messages from the executed process.
+        /// </summary>
+        protected List<string> _stdOutput { get; set; }
+
+        /// <summary>
+        /// Stores the standard error messages from the executed process.
+        /// </summary>
+        protected List<string> _stdError { get; set; }
+
+
+        public event DataReceivedEventHandler? STDOutputReceived;
+
+        public event DataReceivedEventHandler? STDErrorReceived;
+
+        /// <summary>
+        /// Default constructore initializing a new Instance of the <see cref="BaseProcessRunner"/> class.
+        /// </summary>
+        private BaseProcessRunner()
+        {
+            STDOutputReceived = null;
+            STDErrorReceived = null;
+
+            _stdOutput = new List<string>();
+            _stdError = new List<string>();
+
+            StartInfo = new ProcessStartInfo
+            {
+                RedirectStandardOutput = false,
+                RedirectStandardError = false,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+        }
+
+        /// <summary>
+        /// Initializes a new Instance of the <see cref="BaseProcessRunner"/> class.
+        /// </summary>
+        /// <param name="applicationName">Name of the application to execute</param>
+        /// <param name="stdOutputRedirect">Whether to redirect the standard output</param>
+        /// <param name="stdErrorRedirect">Whether to redirect the standard error</param>
+        protected BaseProcessRunner(string applicationName, bool stdOutputRedirect, bool stdErrorRedirect) : this()
+        {
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = applicationName,
+                RedirectStandardOutput = stdOutputRedirect,
+                RedirectStandardError = stdErrorRedirect,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+        }
+
+        private void Initialize (ProcessStartInfo startInfo)
+        {
+            StartInfo = startInfo;
+        }
+
+        /// <summary>
+        /// Initializes a new Instance of the <see cref="BaseProcessRunner"/> class with a specified <see cref="ProcessStartInfo"/>.
+        /// </summary>
+        /// <param name="startInfo">The process start configuration for execution</param>
+        protected BaseProcessRunner(ProcessStartInfo startInfo) : this()
+        {
+            Initialize(startInfo);
+        }
+
+        /// <inheritdoc/>
+        public void SetStandardOutputRedirect(bool redirect)
+        {
+            StartInfo.RedirectStandardOutput = redirect;
+
+            Logger.Debug($"STD Output Redirect : {redirect}");
+        }
+
+        /// <inheritdoc/>
+        public void SetStandardErrorRedirect(bool redirect)
+        {
+            StartInfo.RedirectStandardError = redirect;
+
+            Logger.Debug($"STD Error Redirect : {redirect}");
+        }
+
+        /// <inheritdoc/>
+        public void SetWorkingDirectory(string path)
+        {
+            if (!Directory.Exists(path))
+                throw new DirectoryNotFoundException("Directory does not exist: " + path);
+
+            StartInfo.WorkingDirectory = path;
+
+            Logger.Debug($"Working Directory set to : {path}");
+        }
+
+        /// <summary>
+        /// Saves the standard output from the process internally.
+        /// </summary>
+        /// <param name="sender">Object sending the event</param>
+        /// <param name="data">Data received by the event</param>
+        protected void SaveSTDOutput(object sender, DataReceivedEventArgs data)
+        {
+            string? output = data.Data;
+
+            if (output == null)
+                return;
+
+            _stdOutput.Add(output);
+        }
+
+        /// <summary>
+        /// Saves the standard error from the process internally.
+        /// </summary>
+        /// <param name="sender">Object sending the event</param>
+        /// <param name="data">Data received by the event</param>
+        protected void SaveSTDError(object sender, DataReceivedEventArgs data)
+        {
+            string? output = data.Data;
+
+            if (output == null)
+                return;
+
+            _stdError.Add(output);
+        }
+
+        /// <inheritdoc/>
+        public ProcessResult Run(string args)
+        {
+            StartInfo.Arguments = args;
+
+            string command = $"{ApplicationName} {args}";
+
+            Logger.Debug($"Running Command : {command}");
+
+            using (Process? process = Process.Start(StartInfo))
+            {
+                if (process == null)
+                {
+                    Logger.Error($"Process was Null : {command}");
+                    return new ProcessResult(FAILED_TO_RUN_EXIT_CODE, ProcessStatus.DidNotRun, "Cannot run, Process is null");
+                }
+
+                process.OutputDataReceived += STDOutputReceived;
+                process.ErrorDataReceived += STDErrorReceived;
+                process.OutputDataReceived += (sender, data) => SaveSTDOutput(sender, data);
+                process.ErrorDataReceived += (sender, data) => SaveSTDError(sender, data);
+
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
+                process.WaitForExit();
+
+                if (process.ExitCode == 0)
+                {
+                    Logger.Debug($"Successfully Ran Command : {command}");
+                    return new ProcessResult(process.ExitCode, ProcessStatus.Success, $"Command executed successfully: {command}");
+                }
+
+                Logger.Error($"Command exited with code {process.ExitCode}: {command}");
+                return new ProcessResult(process.ExitCode, ProcessStatus.Failed, $"Command failed with exit code {process.ExitCode}: {command}");
+            }
+        }
+
+        /// <inheritdoc/>
+        public async Task<ProcessResult> RunAsync(string args) => await Task.Run(() => Run(args));
+
+        /// <inheritdoc/>
+        public bool TryRun (string args) => Run(args).Status == ProcessStatus.Success;
+
+        /// <inheritdoc/>
+        public async Task<bool> TryRunAsync(string args)
+        {
+            ProcessResult result = await RunAsync(args);
+            return result.Status == ProcessStatus.Success;
+        }
+    }
+}

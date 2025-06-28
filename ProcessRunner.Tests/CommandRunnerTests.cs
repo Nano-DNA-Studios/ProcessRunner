@@ -165,23 +165,23 @@ namespace NanoDNA.ProcessRunner.Tests
 
             CommandRunner commandRunner = new CommandRunner(applicationName, true, true);
 
-            Assert.That(commandRunner.ProcessStartInfo.RedirectStandardOutput, Is.EqualTo(true));
-            Assert.That(commandRunner.ProcessStartInfo.RedirectStandardError, Is.EqualTo(true));
+            Assert.That(commandRunner.StartInfo.RedirectStandardOutput, Is.EqualTo(true));
+            Assert.That(commandRunner.StartInfo.RedirectStandardError, Is.EqualTo(true));
 
             commandRunner = new CommandRunner(applicationName, true, false);
 
-            Assert.That(commandRunner.ProcessStartInfo.RedirectStandardOutput, Is.EqualTo(true));
-            Assert.That(commandRunner.ProcessStartInfo.RedirectStandardError, Is.EqualTo(false));
+            Assert.That(commandRunner.StartInfo.RedirectStandardOutput, Is.EqualTo(true));
+            Assert.That(commandRunner.StartInfo.RedirectStandardError, Is.EqualTo(false));
 
             commandRunner = new CommandRunner(applicationName, false, true);
 
-            Assert.That(commandRunner.ProcessStartInfo.RedirectStandardOutput, Is.EqualTo(false));
-            Assert.That(commandRunner.ProcessStartInfo.RedirectStandardError, Is.EqualTo(true));
+            Assert.That(commandRunner.StartInfo.RedirectStandardOutput, Is.EqualTo(false));
+            Assert.That(commandRunner.StartInfo.RedirectStandardError, Is.EqualTo(true));
 
             commandRunner = new CommandRunner(applicationName, false, false);
 
-            Assert.That(commandRunner.ProcessStartInfo.RedirectStandardOutput, Is.EqualTo(false));
-            Assert.That(commandRunner.ProcessStartInfo.RedirectStandardError, Is.EqualTo(false));
+            Assert.That(commandRunner.StartInfo.RedirectStandardOutput, Is.EqualTo(false));
+            Assert.That(commandRunner.StartInfo.RedirectStandardError, Is.EqualTo(false));
         }
 
         /// <summary>
@@ -204,23 +204,23 @@ namespace NanoDNA.ProcessRunner.Tests
 
             CommandRunner commandRunner = new CommandRunner(application, true, true);
 
-            Assert.That(commandRunner.ProcessStartInfo.RedirectStandardOutput, Is.EqualTo(true));
-            Assert.That(commandRunner.ProcessStartInfo.RedirectStandardError, Is.EqualTo(true));
+            Assert.That(commandRunner.StartInfo.RedirectStandardOutput, Is.EqualTo(true));
+            Assert.That(commandRunner.StartInfo.RedirectStandardError, Is.EqualTo(true));
 
             commandRunner = new CommandRunner(application, true, false);
 
-            Assert.That(commandRunner.ProcessStartInfo.RedirectStandardOutput, Is.EqualTo(true));
-            Assert.That(commandRunner.ProcessStartInfo.RedirectStandardError, Is.EqualTo(false));
+            Assert.That(commandRunner.StartInfo.RedirectStandardOutput, Is.EqualTo(true));
+            Assert.That(commandRunner.StartInfo.RedirectStandardError, Is.EqualTo(false));
 
             commandRunner = new CommandRunner(application, false, true);
 
-            Assert.That(commandRunner.ProcessStartInfo.RedirectStandardOutput, Is.EqualTo(false));
-            Assert.That(commandRunner.ProcessStartInfo.RedirectStandardError, Is.EqualTo(true));
+            Assert.That(commandRunner.StartInfo.RedirectStandardOutput, Is.EqualTo(false));
+            Assert.That(commandRunner.StartInfo.RedirectStandardError, Is.EqualTo(true));
 
             commandRunner = new CommandRunner(application, false, false);
 
-            Assert.That(commandRunner.ProcessStartInfo.RedirectStandardOutput, Is.EqualTo(false));
-            Assert.That(commandRunner.ProcessStartInfo.RedirectStandardError, Is.EqualTo(false));
+            Assert.That(commandRunner.StartInfo.RedirectStandardOutput, Is.EqualTo(false));
+            Assert.That(commandRunner.StartInfo.RedirectStandardError, Is.EqualTo(false));
         }
 
         /// <summary>
@@ -276,11 +276,11 @@ namespace NanoDNA.ProcessRunner.Tests
 
             CommandRunner commandRunner = new CommandRunner(application);
 
-            commandRunner.RunCommand(command);
+            commandRunner.Run(command);
 
-            Assert.That(commandRunner.StandardOutput.Length, Is.GreaterThan(0));
-            Assert.That(commandRunner.StandardError.Length, Is.EqualTo(0));
-            Assert.That(commandRunner.StandardOutput[0], Is.EqualTo(output));
+            Assert.That(commandRunner.STDOutput.Length, Is.GreaterThan(0));
+            Assert.That(commandRunner.STDError.Length, Is.EqualTo(0));
+            Assert.That(commandRunner.STDOutput[0], Is.EqualTo(output));
         }
 
         /// <summary>
@@ -304,14 +304,14 @@ namespace NanoDNA.ProcessRunner.Tests
 
             try
             {
-                commandRunner.RunCommand(command, true, true);
+                commandRunner.Run(command);
                 Assert.Fail("No Exception Thrown");
             } catch (Exception e)
             {
-                Assert.That(commandRunner.StandardOutput.Length, Is.EqualTo(0));
-                Assert.That(commandRunner.StandardError.Length, Is.GreaterThan(0));
+                Assert.That(commandRunner.STDOutput.Length, Is.EqualTo(0));
+                Assert.That(commandRunner.STDError.Length, Is.GreaterThan(0));
 
-                string errorOutput = string.Join("\n", commandRunner.StandardError).ToLower();
+                string errorOutput = string.Join("\n", commandRunner.STDError).ToLower();
                 Assert.That(errorOutput, Does.Contain("not").And.Contain("found").Or.Contain("recognized"));
             }
         }
@@ -336,11 +336,11 @@ namespace NanoDNA.ProcessRunner.Tests
 
             CommandRunner commandRunner = new CommandRunner(application);
 
-            await commandRunner.RunCommandAsync(command);
+            await commandRunner.RunAsync(command);
 
-            Assert.That(commandRunner.StandardOutput.Length, Is.GreaterThan(0));
-            Assert.That(commandRunner.StandardError.Length, Is.EqualTo(0));
-            Assert.That(commandRunner.StandardOutput[0], Is.EqualTo(output));
+            Assert.That(commandRunner.STDOutput.Length, Is.GreaterThan(0));
+            Assert.That(commandRunner.STDError.Length, Is.EqualTo(0));
+            Assert.That(commandRunner.STDOutput[0], Is.EqualTo(output));
         }
         
         /// <summary>
@@ -364,14 +364,14 @@ namespace NanoDNA.ProcessRunner.Tests
 
             try
             {
-                await commandRunner.RunCommandAsync(command);
+                await commandRunner.RunAsync(command);
                 Assert.Fail($"Command was supposed to fail : {command}");
             } catch (Exception e)
             {
-                Assert.That(commandRunner.StandardOutput.Length, Is.EqualTo(0));
-                Assert.That(commandRunner.StandardError.Length, Is.GreaterThan(0));
+                Assert.That(commandRunner.STDOutput.Length, Is.EqualTo(0));
+                Assert.That(commandRunner.STDError.Length, Is.GreaterThan(0));
 
-                string errorOutput = string.Join("\n", commandRunner.StandardError).ToLower();
+                string errorOutput = string.Join("\n", commandRunner.STDError).ToLower();
                 Assert.That(errorOutput, Does.Contain("not").And.Contain("found").Or.Contain("recognized"));
             }
         }
@@ -405,11 +405,11 @@ namespace NanoDNA.ProcessRunner.Tests
 
             CommandRunner commandRunner = new CommandRunner(info);
 
-            commandRunner.RunCommand(command);
+            commandRunner.Run(command);
 
-            Assert.That(commandRunner.StandardOutput.Length, Is.GreaterThan(0));
-            Assert.That(commandRunner.StandardError.Length, Is.EqualTo(0));
-            Assert.That(commandRunner.StandardOutput[0], Is.EqualTo("hello"));
+            Assert.That(commandRunner.STDOutput.Length, Is.GreaterThan(0));
+            Assert.That(commandRunner.STDError.Length, Is.EqualTo(0));
+            Assert.That(commandRunner.STDOutput[0], Is.EqualTo("hello"));
         }
     }
 }
