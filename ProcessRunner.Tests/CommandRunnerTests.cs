@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestPlatform.PlatformAbstractions;
+using NanoDNA.ProcessRunner.Enums;
 using NUnit.Framework;
 using System;
 using System.Diagnostics;

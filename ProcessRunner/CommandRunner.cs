@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using NanoDNA.ProcessRunner.Enums;
 using NLog;
 
 namespace NanoDNA.ProcessRunner

@@ -1,5 +1,4 @@
-﻿
-namespace NanoDNA.ProcessRunner
+﻿namespace NanoDNA.ProcessRunner.Enums
 {
     /// <summary>
     /// Stores the possible statuses of a process execution.

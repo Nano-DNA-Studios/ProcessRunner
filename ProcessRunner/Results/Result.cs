@@ -1,10 +1,9 @@
-﻿
-namespace NanoDNA.ProcessRunner
+﻿namespace NanoDNA.ProcessRunner.Results
 {
     /// <summary>
-    /// Represents a 
+    /// Represents the result of an operation, provides a way to encapsulate the content and an optional message.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="T">The Type of the Content to include in the Result</typeparam>
     public class Result<T> where T : class
     {
         /// <summary>

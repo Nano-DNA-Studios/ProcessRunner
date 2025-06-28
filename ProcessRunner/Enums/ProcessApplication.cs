@@ -1,4 +1,4 @@
-﻿namespace NanoDNA.ProcessRunner
+﻿namespace NanoDNA.ProcessRunner.Enums
 {
     /// <summary>
     /// Application that will handle the Command Runner Process.
