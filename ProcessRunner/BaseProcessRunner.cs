@@ -1,4 +1,5 @@
 ﻿using NanoDNA.ProcessRunner.Enums;
+using NanoDNA.ProcessRunner.Results;
 using NLog;
 using System.Collections.Generic;
 using System.Diagnostics;

@@ -1,5 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestPlatform.PlatformAbstractions;
 using NanoDNA.ProcessRunner.Enums;
+using NanoDNA.ProcessRunner.Results;
 using NUnit.Framework;
 using System;
 using System.Diagnostics;
@@ -303,7 +304,7 @@ namespace NanoDNA.ProcessRunner.Tests
 
             CommandRunner commandRunner = new CommandRunner(application);
             
-            ProcessResult result = commandRunner.Run(command);
+            ProcessResult result = commandRunner.Run(command).Content;
 
             if (result.Status != ProcessStatus.Failed)
                 Assert.Fail($"Command was supposed to fail : {command}");
@@ -335,9 +336,9 @@ namespace NanoDNA.ProcessRunner.Tests
 
             CommandRunner commandRunner = new CommandRunner(application);
 
-            ProcessResult result = await commandRunner.RunAsync(command);
+            Result<ProcessResult> result = await commandRunner.RunAsync(command);
 
-            if (result.Status == ProcessStatus.Failed)
+            if (result.Content.Status == ProcessStatus.Failed)
                 Assert.Fail($"Command was supposed to succeed : {command}\n{result.Message}");
 
             Assert.That(commandRunner.STDOutput.Length, Is.GreaterThan(0));
@@ -364,7 +365,7 @@ namespace NanoDNA.ProcessRunner.Tests
 
             CommandRunner commandRunner = new CommandRunner(application);
 
-            ProcessResult result = await commandRunner.RunAsync(command);
+            ProcessResult result = (await commandRunner.RunAsync(command)).Content;
 
             if (result.Status != ProcessStatus.Failed)
                 Assert.Fail($"Command was supposed to fail : {command}");

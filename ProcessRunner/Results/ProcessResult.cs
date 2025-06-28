@@ -1,7 +1,6 @@
-﻿
-using NanoDNA.ProcessRunner.Enums;
+﻿using NanoDNA.ProcessRunner.Enums;
 
-namespace NanoDNA.ProcessRunner
+namespace NanoDNA.ProcessRunner.Results
 {
     /// <summary>
     /// Represents the result of a process execution.

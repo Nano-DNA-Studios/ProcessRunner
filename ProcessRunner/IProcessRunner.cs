@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
+using NanoDNA.ProcessRunner.Results;
 
 namespace NanoDNA.ProcessRunner
 {
