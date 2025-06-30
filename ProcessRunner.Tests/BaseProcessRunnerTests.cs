@@ -4,6 +4,8 @@ using Microsoft.VisualStudio.TestPlatform.PlatformAbstractions;
 using System;
 using System.IO;
 using static System.Net.Mime.MediaTypeNames;
+using NanoDNA.ProcessRunner.Results;
+using NanoDNA.ProcessRunner.Enums;
 
 namespace NanoDNA.ProcessRunner.Tests
 {
@@ -284,6 +286,7 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.That(testRunner.StartInfo.WorkingDirectory, Is.EqualTo(workingDirectory));
         }
 
+        [Test]
         public void SetInvalidWorkingDirectory()
         {
             string invalidDirectory = GetInvalidOSDirectory();
@@ -295,14 +298,34 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.Throws<DirectoryNotFoundException>(() => testRunner.SetWorkingDirectory(invalidDirectory));
         }
 
+        public void RunDefault()
+        {
+            string application = "echo";
+            TestRunner runner = new TestRunner(application);
 
+            Assert.That(runner.StartInfo.FileName, Is.EqualTo(application));
+            Assert.That(runner.StartInfo.WorkingDirectory, Is.Empty);
+            Assert.That(runner.StartInfo.RedirectStandardOutput, Is.False);
+            Assert.That(runner.StartInfo.RedirectStandardError, Is.False);
+            Assert.That(runner.StartInfo.UseShellExecute, Is.False);
+            Assert.That(runner.StartInfo.CreateNoWindow, Is.True);
+            Assert.That(runner.StartInfo.Arguments, Is.Empty);
 
+            Assert.That(runner.ApplicationName, Is.EqualTo(application));
+            Assert.That(runner.WorkingDirectory, Is.Empty);
+            Assert.That(runner.STDOutput, Is.Empty);
+            Assert.That(runner.STDError, Is.Empty);
+            Assert.That(runner.STDOutputRedirect, Is.False);
+            Assert.That(runner.STDErrorRedirect, Is.False);
+            Assert.That(runner.IsApplicationAvailable(application), Is.True);
 
+            Result<ProcessResult> result = runner.Run("Hello");
 
-
-
-
-
+            Assert.That(result.Content.Status, Is.EqualTo(ProcessStatus.Success));
+            Assert.That(result.Content.ExitCode, Is.EqualTo(0));
+            Assert.That(runner.STDOutput, Is.Not.Empty);
+            Assert.Contains("Hello", runner.STDOutput);
+        }
 
 
 
