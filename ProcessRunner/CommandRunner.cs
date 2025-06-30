@@ -25,9 +25,10 @@ namespace NanoDNA.ProcessRunner
         /// Initializes a new Instance of <see cref="CommandRunner"/> using <see cref="ProcessApplication"/>.
         /// </summary>
         /// <param name="application">Process Application the Command will run through.</param>
-        /// <param name="stdOutRedirect">Redirect the Standard Output and Store in the <see cref="BaseProcessRunner.STDOutput"/> Property.</param>
-        /// <param name="stdErrRedirect">Redirect the Standard Error and Store in the <see cref="BaseProcessRunner.STDError"/> Property</param>
-        public CommandRunner(ProcessApplication application, bool stdOutRedirect = true, bool stdErrRedirect = true) : base(GetApplicationPath(application), stdOutRedirect, stdErrRedirect)
+        /// <param name="workingDirectory">Working Directory to run the Command in. Defaults to the current directory if not specified.</param>
+        /// <param name="stdOutRedirect">Redirect the Standard Output and Store in the <see cref="BaseProcessRunner.STDOutput"/> Property. Default is true if unspecified</param>
+        /// <param name="stdErrRedirect">Redirect the Standard Error and Store in the <see cref="BaseProcessRunner.STDError"/> Property. Default is true if unspecified</param>
+        public CommandRunner(ProcessApplication application, string workingDirectory = "", bool stdOutRedirect = true, bool stdErrRedirect = true) : base(GetApplicationPath(application), workingDirectory, stdOutRedirect, stdErrRedirect)
         {
             Application = application;
         }
@@ -36,9 +37,10 @@ namespace NanoDNA.ProcessRunner
         /// Initializes a new Instance of <see cref="CommandRunner"/> using the String Name of the <see cref="ProcessApplication"/>.
         /// </summary>
         /// <param name="applicationName">String Name of the Process Application Enum the Command will run through.</param>
+        /// <param name="workingDirectory">Working Directory to run the Command in. Defaults to the current directory if not specified.</param>
         /// <param name="stdOutRedirect">Redirect the Standard Output and Store in the <see cref="BaseProcessRunner.STDOutput"/> Property.</param>
         /// <param name="stdErrRedirect">Redirect the Standard Error and Store in the <see cref="BaseProcessRunner.STDError"/> Property</param>
-        public CommandRunner(string applicationName, bool stdOutRedirect = true, bool stdErrRedirect = true) : base(GetApplicationPath(applicationName), stdOutRedirect, stdErrRedirect)
+        public CommandRunner(string applicationName, string workingDirectory = "", bool stdOutRedirect = true, bool stdErrRedirect = true) : base(GetApplicationPath(applicationName), workingDirectory, stdOutRedirect, stdErrRedirect)
         {
             Application = GetApplicationFromNameOrPath(applicationName);
         }
@@ -46,9 +48,10 @@ namespace NanoDNA.ProcessRunner
         /// <summary>
         /// Initializes a new Instance of <see cref="CommandRunner"/>. Uses the default Process Application based on the devices Operating System.
         /// </summary>
+        /// <param name="workingDirectory">Working Directory to run the Command in. Defaults to the current directory if not specified.</param>
         /// <param name="stdOutRedirect">Redirect the Standard Output and Store in the <see cref="BaseProcessRunner.STDOutput"/> Property.</param>
         /// <param name="stdErrRedirect">Redirect the Standard Error and Store in the <see cref="BaseProcessRunner.STDError"/> Property</param>
-        public CommandRunner(bool stdOutRedirect = true, bool stdErrRedirect = true) : base(GetApplicationPath(), stdOutRedirect, stdErrRedirect)
+        public CommandRunner(string workingDirectory = "", bool stdOutRedirect = true, bool stdErrRedirect = true) : base(GetApplicationPath(), workingDirectory, stdOutRedirect, stdErrRedirect)
         {
             Application = GetDefaultOSApplication();
         }

@@ -1,6 +1,7 @@
 ﻿using NanoDNA.ProcessRunner.Enums;
 using NanoDNA.ProcessRunner.Results;
 using NLog;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -41,12 +42,12 @@ namespace NanoDNA.ProcessRunner
         /// <summary>
         /// Gets whether <see cref="STDOutput"/> is redirected to the console.
         /// </summary>
-        protected bool _stdOutputRedirect => StartInfo.RedirectStandardOutput;
+        public bool STDOutputRedirect => StartInfo.RedirectStandardOutput;
 
         /// <summary>
         /// Gets whether <see cref="STDError"/> is redirected to the console.
         /// </summary>
-        protected bool _stdErrorRedirect => StartInfo.RedirectStandardError;
+        public bool STDErrorRedirect => StartInfo.RedirectStandardError;
 
         /// <summary>
         /// Stores the standard output messages from the executed process.
@@ -92,23 +93,46 @@ namespace NanoDNA.ProcessRunner
         /// Initializes a new Instance of the <see cref="BaseProcessRunner"/> class.
         /// </summary>
         /// <param name="applicationName">Name of the application to execute</param>
-        /// <param name="stdOutputRedirect">Whether to redirect the standard output</param>
-        /// <param name="stdErrorRedirect">Whether to redirect the standard error</param>
-        protected BaseProcessRunner(string applicationName, bool stdOutputRedirect, bool stdErrorRedirect) : this()
+        /// <param name="workingDirectory">Working directory for the process, defaults to the current directory if unspecified</param>
+        /// <param name="stdOutputRedirect">Whether to redirect the standard output, defaults to false if unspecified</param>
+        /// <param name="stdErrorRedirect">Whether to redirect the standard error, defaults to false if unspecified</param>
+        protected BaseProcessRunner(string applicationName, string workingDirectory = "", bool stdOutputRedirect = false, bool stdErrorRedirect = false) : this()
         {
-            StartInfo = new ProcessStartInfo
-            {
-                FileName = applicationName,
-                RedirectStandardOutput = stdOutputRedirect,
-                RedirectStandardError = stdErrorRedirect,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
+            if (string.IsNullOrEmpty(workingDirectory))
+                Initialize(new ProcessStartInfo
+                {
+                    FileName = applicationName,
+                    RedirectStandardOutput = stdOutputRedirect,
+                    RedirectStandardError = stdErrorRedirect,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                });
+            else
+                Initialize(new ProcessStartInfo
+                {
+                    FileName = applicationName,
+                    WorkingDirectory = workingDirectory,
+                    RedirectStandardOutput = stdOutputRedirect,
+                    RedirectStandardError = stdErrorRedirect,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                });
         }
 
+        /// <summary>
+        /// Initializes the <see cref="BaseProcessRunner"/> by setting the <see cref="StartInfo"/> property and validating the application availability.
+        /// </summary>
+        /// <param name="startInfo">Starting configuration of the <see cref="BaseProcessRunner"/></param>
+        /// <exception cref="ArgumentException">Thrown if the application does not exist or inaccessible</exception>
         private void Initialize(ProcessStartInfo startInfo)
         {
             StartInfo = startInfo;
+
+            if (!IsApplicationAvailable(StartInfo.FileName))
+                throw new ArgumentException($"Application '{StartInfo.FileName}' not found on the system.", nameof(StartInfo.FileName));
+
+            if (!string.IsNullOrEmpty(StartInfo.WorkingDirectory) && !Directory.Exists(StartInfo.WorkingDirectory))
+                throw new DirectoryNotFoundException($"Working directory '{StartInfo.WorkingDirectory}' does not exist.");
         }
 
         /// <summary>
@@ -226,6 +250,29 @@ namespace NanoDNA.ProcessRunner
         {
             Result<ProcessResult> result = await this.RunAsync(args);
             return result.Content.Status == ProcessStatus.Success;
+        }
+
+        /// <inheritdoc/>
+        public bool IsApplicationAvailable(string applicationName)
+        {
+            ProcessStartInfo startInfo = new ProcessStartInfo
+            {
+                FileName = OperatingSystem.IsWindows() ? "where" : "which",
+                Arguments = applicationName,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false
+            };
+
+            using (Process? process = Process.Start(startInfo))
+            {
+                if (process == null)
+                    return false;
+
+                process.WaitForExit();
+
+                return process.ExitCode == 0;
+            }
         }
     }
 }

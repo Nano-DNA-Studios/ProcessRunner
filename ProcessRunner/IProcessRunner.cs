@@ -81,5 +81,12 @@ namespace NanoDNA.ProcessRunner
         /// <param name="args">Arguments for the process</param>
         /// <returns>An awaitable task with a result of True if the process succeeded, False otherwise</returns>
         public Task<bool> TryRunAsync(string args);
+
+        /// <summary>
+        /// Checks if the specified application is available on the system.
+        /// </summary>
+        /// <param name="applicationName">Name of the Application</param>
+        /// <returns>True if the Application Exists on the Device</returns>
+        public bool IsApplicationAvailable(string applicationName);
     }
 }

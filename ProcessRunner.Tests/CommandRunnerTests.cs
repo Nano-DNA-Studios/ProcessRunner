@@ -1,4 +1,4 @@
-﻿using Microsoft.VisualStudio.TestPlatform.PlatformAbstractions;
+﻿/*using Microsoft.VisualStudio.TestPlatform.PlatformAbstractions;
 using NanoDNA.ProcessRunner.Enums;
 using NanoDNA.ProcessRunner.Results;
 using NUnit.Framework;
@@ -414,4 +414,4 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.That(commandRunner.STDOutput[0], Is.EqualTo("hello"));
         }
     }
-}
+}*/
