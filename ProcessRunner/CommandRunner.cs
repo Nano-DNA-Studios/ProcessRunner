@@ -179,6 +179,7 @@ namespace NanoDNA.ProcessRunner
                 case ProcessApplication.Sh:
                     return $"-c \"{command}\"";
                 default:
+                    Logger.Error($"Unsupported Application: {application}");
                     throw new NotSupportedException($"Unsupported Application: {application}");
             }
         }

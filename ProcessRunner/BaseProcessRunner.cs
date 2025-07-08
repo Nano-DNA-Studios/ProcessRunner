@@ -87,6 +87,8 @@ namespace NanoDNA.ProcessRunner
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
+
+            Logger.Debug("Initialized with default settings.");
         }
 
         /// <summary>
@@ -117,6 +119,8 @@ namespace NanoDNA.ProcessRunner
                     UseShellExecute = false,
                     CreateNoWindow = true
                 });
+
+            Logger.Debug($"Initialized with Following Info (Application : {applicationName}, STDOutRedirect : {stdOutputRedirect}, STDErrRedirect : {stdErrorRedirect})");
         }
 
         /// <summary>
