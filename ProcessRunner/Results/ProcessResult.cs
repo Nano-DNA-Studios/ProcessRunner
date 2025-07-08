@@ -1,4 +1,5 @@
 ﻿using NanoDNA.ProcessRunner.Enums;
+using NLog;
 
 namespace NanoDNA.ProcessRunner.Results
 {
@@ -7,6 +8,11 @@ namespace NanoDNA.ProcessRunner.Results
     /// </summary>
     public class ProcessResult
     {
+        /// <summary>
+        /// Logger instance for the CommandRunner class, used for logging errors and information for debugging and transparency.
+        /// </summary>
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
         /// <summary>
         /// Gets the exit code of the process.
         /// </summary>
@@ -26,6 +32,8 @@ namespace NanoDNA.ProcessRunner.Results
         {
             Status = status;
             ExitCode = exitCode;
+
+            Logger.Debug($"Process Result Created : (Status={status}, ExitCode={exitCode})");
         }
     }
 }
