@@ -120,7 +120,10 @@ namespace NanoDNA.ProcessRunner
                     CreateNoWindow = true
                 });
 
-            Logger.Debug($"Initialized with Following Info (Application : {applicationName}, STDOutRedirect : {stdOutputRedirect}, STDErrRedirect : {stdErrorRedirect})");
+            if (string.IsNullOrEmpty(workingDirectory))
+                Logger.Debug($"Initialized with Following Info (Application : {applicationName}, STDOutRedirect : {stdOutputRedirect}, STDErrRedirect : {stdErrorRedirect})");
+            else
+                Logger.Debug($"Initialized with Following Info (Application : {applicationName}, Working Directory : {workingDirectory}, STDOutRedirect : {stdOutputRedirect}, STDErrRedirect : {stdErrorRedirect})");
         }
 
         /// <summary>
