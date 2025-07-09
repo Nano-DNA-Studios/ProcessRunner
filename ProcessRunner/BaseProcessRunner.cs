@@ -239,8 +239,12 @@ namespace NanoDNA.ProcessRunner
                 process.OutputDataReceived += (sender, data) => SaveSTDOutput(sender, data);
                 process.ErrorDataReceived += (sender, data) => SaveSTDError(sender, data);
 
-                process.BeginOutputReadLine();
-                process.BeginErrorReadLine();
+                if (STDOutputRedirect)
+                    process.BeginOutputReadLine();
+
+                if (STDErrorRedirect)
+                    process.BeginErrorReadLine();
+
                 process.WaitForExit();
 
                 if (process.ExitCode == 0)

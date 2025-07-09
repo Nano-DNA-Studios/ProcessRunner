@@ -12,12 +12,13 @@ namespace NanoDNA.ProcessRunner.Tests
     {
         private static readonly string DEFAULT_APPLICATION_COMMAND = OperatingSystem.IsWindows() ? "/c echo Hello" : "Hello";
 
+        private static readonly string DEFAULT_APPLICATION_FAIL_COMMAND = OperatingSystem.IsWindows() ? "/c echoe Hello" : "Hello";
+
         private static readonly string DEFAULT_VALID_APPLICATION = OperatingSystem.IsWindows() ? "cmd.exe" : "echo";
 
         private const string DEFAULT_APPLICATION_EXPECTED_OUTPUT = "Hello";
 
         private const string DEFAULT_NON_EXISTENT_APPLICATION = "non_existent_app";
-
 
         /// <summary>
         /// Checks if the Current Operating System is the same as the one passed in
@@ -320,6 +321,30 @@ namespace NanoDNA.ProcessRunner.Tests
         }
 
         [Test]
+        public void RunNoRedirect()
+        {
+            TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION, stdOut: false);
+
+            Result<ProcessResult> result = runner.Run(DEFAULT_APPLICATION_COMMAND);
+
+            Assert.That(result.Content.Status, Is.EqualTo(ProcessStatus.Success));
+            Assert.That(result.Content.ExitCode, Is.EqualTo(0));
+            Assert.That(runner.STDOutput, Is.Empty);
+        }
+
+        [Test]
+        public void RunDefaultFail ()
+        {
+            TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION);
+
+            Result<ProcessResult> result = runner.Run(DEFAULT_APPLICATION_FAIL_COMMAND);
+
+            Assert.That(result.Content.Status, Is.EqualTo(ProcessStatus.Failed));
+            Assert.That(result.Content.ExitCode, Is.Not.EqualTo(0));
+            Assert.That(runner.STDError, Is.Not.Empty);
+        }
+
+        [Test]
         public void RunAsyncDefault()
         {
             TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION);
@@ -330,6 +355,30 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.That(result.Content.ExitCode, Is.EqualTo(0));
             Assert.That(runner.STDOutput, Is.Not.Empty);
             Assert.Contains(DEFAULT_APPLICATION_EXPECTED_OUTPUT, runner.STDOutput);
+        }
+
+        [Test]
+        public void RunAsyncNoRedirect()
+        {
+            TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION, stdOut: false);
+
+            Result<ProcessResult> result = runner.RunAsync(DEFAULT_APPLICATION_COMMAND).Result;
+
+            Assert.That(result.Content.Status, Is.EqualTo(ProcessStatus.Success));
+            Assert.That(result.Content.ExitCode, Is.EqualTo(0));
+            Assert.That(runner.STDOutput, Is.Empty);
+        }
+
+        [Test]
+        public void RunAsyncDefaultFail()
+        {
+            TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION);
+
+            Result<ProcessResult> result = runner.RunAsync(DEFAULT_APPLICATION_FAIL_COMMAND).Result;
+
+            Assert.That(result.Content.Status, Is.EqualTo(ProcessStatus.Failed));
+            Assert.That(result.Content.ExitCode, Is.Not.EqualTo(0));
+            Assert.That(runner.STDError, Is.Not.Empty);
         }
 
         [Test]
@@ -345,6 +394,28 @@ namespace NanoDNA.ProcessRunner.Tests
         }
 
         [Test]
+        public void TryRunNoRedirect()
+        {
+            TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION, stdOut: false);
+
+            bool result = runner.TryRun(DEFAULT_APPLICATION_COMMAND);
+
+            Assert.That(result, Is.True);
+            Assert.That(runner.STDOutput, Is.Empty);
+        }
+
+        [Test]
+        public void TryRunDefaultFail()
+        {
+            TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION);
+
+            bool result = runner.TryRun(DEFAULT_APPLICATION_FAIL_COMMAND);
+
+            Assert.That(result, Is.False);
+            Assert.That(runner.STDError, Is.Not.Empty);
+        }
+
+        [Test]
         public void TryRunAsyncDefault()
         {
             TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION);
@@ -354,6 +425,28 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.That(result, Is.True);
             Assert.That(runner.STDOutput, Is.Not.Empty);
             Assert.Contains(DEFAULT_APPLICATION_EXPECTED_OUTPUT, runner.STDOutput);
+        }
+
+        [Test]
+        public void TryRunAsyncNoRedirect()
+        {
+            TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION, stdOut: false);
+
+            bool result = runner.TryRunAsync(DEFAULT_APPLICATION_COMMAND).Result;
+
+            Assert.That(result, Is.True);
+            Assert.That(runner.STDOutput, Is.Empty);
+        }
+
+        [Test]
+        public void TryRunAsyncDefaultFail()
+        {
+            TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION);
+
+            bool result = runner.TryRunAsync(DEFAULT_APPLICATION_FAIL_COMMAND).Result;
+
+            Assert.That(result, Is.False);
+            Assert.That(runner.STDError, Is.Not.Empty);
         }
 
 
