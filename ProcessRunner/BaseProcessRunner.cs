@@ -82,13 +82,13 @@ namespace NanoDNA.ProcessRunner
 
             StartInfo = new ProcessStartInfo
             {
-                RedirectStandardOutput = false,
-                RedirectStandardError = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
 
-            Logger.Debug("Initialized with default settings.");
+            Logger.Trace("Initialized with default settings.");
         }
 
         /// <summary>
@@ -98,7 +98,7 @@ namespace NanoDNA.ProcessRunner
         /// <param name="workingDirectory">Working directory for the process, defaults to the current directory if unspecified</param>
         /// <param name="stdOutputRedirect">Whether to redirect the standard output, defaults to false if unspecified</param>
         /// <param name="stdErrorRedirect">Whether to redirect the standard error, defaults to false if unspecified</param>
-        protected BaseProcessRunner(string applicationName, string workingDirectory = "", bool stdOutputRedirect = false, bool stdErrorRedirect = false) : this()
+        protected BaseProcessRunner(string applicationName, string workingDirectory = "", bool stdOutputRedirect = true, bool stdErrorRedirect = true) : this()
         {
             if (string.IsNullOrEmpty(workingDirectory))
                 Initialize(new ProcessStartInfo
@@ -136,10 +136,16 @@ namespace NanoDNA.ProcessRunner
             StartInfo = startInfo;
 
             if (!IsApplicationAvailable(StartInfo.FileName))
+            {
+                Logger.Error($"Application '{StartInfo.FileName}' not found on the system.");
                 throw new ArgumentException($"Application '{StartInfo.FileName}' not found on the system.", nameof(StartInfo.FileName));
+            }
 
             if (!string.IsNullOrEmpty(StartInfo.WorkingDirectory) && !Directory.Exists(StartInfo.WorkingDirectory))
+            {
+                Logger.Error($"Working directory '{StartInfo.WorkingDirectory}' does not exist.");
                 throw new DirectoryNotFoundException($"Working directory '{StartInfo.WorkingDirectory}' does not exist.");
+            }
         }
 
         /// <summary>
@@ -171,11 +177,14 @@ namespace NanoDNA.ProcessRunner
         public void SetWorkingDirectory(string path)
         {
             if (!Directory.Exists(path))
+            {
+                Logger.Error($"Directory does not exist: {path}");
                 throw new DirectoryNotFoundException("Directory does not exist: " + path);
+            }
 
             StartInfo.WorkingDirectory = path;
 
-            Logger.Debug($"Working Directory set to : {path}");
+            Logger.Debug($"Working Directory : {path}");
         }
 
         /// <summary>

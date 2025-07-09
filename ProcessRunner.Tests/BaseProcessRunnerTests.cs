@@ -3,7 +3,6 @@ using System.Diagnostics;
 using Microsoft.VisualStudio.TestPlatform.PlatformAbstractions;
 using System;
 using System.IO;
-using static System.Net.Mime.MediaTypeNames;
 using NanoDNA.ProcessRunner.Results;
 using NanoDNA.ProcessRunner.Enums;
 
@@ -11,6 +10,15 @@ namespace NanoDNA.ProcessRunner.Tests
 {
     internal class BaseProcessRunnerTests
     {
+        private static readonly string DEFAULT_APPLICATION_COMMAND = OperatingSystem.IsWindows() ? "/c echo Hello" : "Hello";
+
+        private static readonly string DEFAULT_VALID_APPLICATION = OperatingSystem.IsWindows() ? "cmd.exe" : "echo";
+
+        private const string DEFAULT_APPLICATION_EXPECTED_OUTPUT = "Hello";
+
+        private const string DEFAULT_NON_EXISTENT_APPLICATION = "non_existent_app";
+
+
         /// <summary>
         /// Checks if the Current Operating System is the same as the one passed in
         /// </summary>
@@ -67,7 +75,7 @@ namespace NanoDNA.ProcessRunner.Tests
 
         private class TestRunner : BaseProcessRunner
         {
-            public TestRunner(string application, string workingDirectory = "", bool stdOut = false, bool stdErr = false)
+            public TestRunner(string application, string workingDirectory = "", bool stdOut = true, bool stdErr = true)
                 : base(application, workingDirectory, stdOut, stdErr) { }
 
             public TestRunner(ProcessStartInfo info) : base(info) { }
@@ -82,8 +90,8 @@ namespace NanoDNA.ProcessRunner.Tests
 
             Assert.That(runner.StartInfo.FileName, Is.EqualTo(application));
             Assert.That(runner.StartInfo.WorkingDirectory, Is.Empty);
-            Assert.That(runner.StartInfo.RedirectStandardOutput, Is.False);
-            Assert.That(runner.StartInfo.RedirectStandardError, Is.False);
+            Assert.That(runner.StartInfo.RedirectStandardOutput, Is.True);
+            Assert.That(runner.StartInfo.RedirectStandardError, Is.True);
             Assert.That(runner.StartInfo.UseShellExecute, Is.False);
             Assert.That(runner.StartInfo.CreateNoWindow, Is.True);
             Assert.That(runner.StartInfo.Arguments, Is.Empty);
@@ -92,8 +100,8 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.That(runner.WorkingDirectory, Is.Empty);
             Assert.That(runner.STDOutput, Is.Empty);
             Assert.That(runner.STDError, Is.Empty);
-            Assert.That(runner.STDOutputRedirect, Is.False);
-            Assert.That(runner.STDErrorRedirect, Is.False);
+            Assert.That(runner.STDOutputRedirect, Is.True);
+            Assert.That(runner.STDErrorRedirect, Is.True);
             Assert.That(runner.IsApplicationAvailable(application), Is.True);
         }
 
@@ -107,8 +115,8 @@ namespace NanoDNA.ProcessRunner.Tests
 
             Assert.That(runner.StartInfo.FileName, Is.EqualTo(application));
             Assert.That(runner.StartInfo.WorkingDirectory, Is.EqualTo(workingDirectory));
-            Assert.That(runner.StartInfo.RedirectStandardOutput, Is.False);
-            Assert.That(runner.StartInfo.RedirectStandardError, Is.False);
+            Assert.That(runner.StartInfo.RedirectStandardOutput, Is.True);
+            Assert.That(runner.StartInfo.RedirectStandardError, Is.True);
             Assert.That(runner.StartInfo.UseShellExecute, Is.False);
             Assert.That(runner.StartInfo.CreateNoWindow, Is.True);
             Assert.That(runner.StartInfo.Arguments, Is.Empty);
@@ -117,8 +125,8 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.That(runner.WorkingDirectory, Is.EqualTo(workingDirectory));
             Assert.That(runner.STDOutput, Is.Empty);
             Assert.That(runner.STDError, Is.Empty);
-            Assert.That(runner.STDOutputRedirect, Is.False);
-            Assert.That(runner.STDErrorRedirect, Is.False);
+            Assert.That(runner.STDOutputRedirect, Is.True);
+            Assert.That(runner.STDErrorRedirect, Is.True);
             Assert.That(runner.IsApplicationAvailable(application), Is.True);
         }
 
@@ -151,7 +159,7 @@ namespace NanoDNA.ProcessRunner.Tests
         }
 
         [Test]
-        [TestCase("non_existent_app")]
+        [TestCase(DEFAULT_NON_EXISTENT_APPLICATION)]
         [TestCase(null)]
         public void ConstructorWithInvalidApplication(string applicationName)
         {
@@ -206,7 +214,7 @@ namespace NanoDNA.ProcessRunner.Tests
         {
             ProcessStartInfo startInfo = new ProcessStartInfo()
             {
-                FileName = "non_existent_app",
+                FileName = DEFAULT_NON_EXISTENT_APPLICATION,
                 RedirectStandardOutput = false,
                 RedirectStandardError = false,
                 UseShellExecute = false,
@@ -298,35 +306,55 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.Throws<DirectoryNotFoundException>(() => testRunner.SetWorkingDirectory(invalidDirectory));
         }
 
+        [Test]
         public void RunDefault()
         {
-            string application = "echo";
-            TestRunner runner = new TestRunner(application);
+            TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION);
 
-            Assert.That(runner.StartInfo.FileName, Is.EqualTo(application));
-            Assert.That(runner.StartInfo.WorkingDirectory, Is.Empty);
-            Assert.That(runner.StartInfo.RedirectStandardOutput, Is.False);
-            Assert.That(runner.StartInfo.RedirectStandardError, Is.False);
-            Assert.That(runner.StartInfo.UseShellExecute, Is.False);
-            Assert.That(runner.StartInfo.CreateNoWindow, Is.True);
-            Assert.That(runner.StartInfo.Arguments, Is.Empty);
-
-            Assert.That(runner.ApplicationName, Is.EqualTo(application));
-            Assert.That(runner.WorkingDirectory, Is.Empty);
-            Assert.That(runner.STDOutput, Is.Empty);
-            Assert.That(runner.STDError, Is.Empty);
-            Assert.That(runner.STDOutputRedirect, Is.False);
-            Assert.That(runner.STDErrorRedirect, Is.False);
-            Assert.That(runner.IsApplicationAvailable(application), Is.True);
-
-            Result<ProcessResult> result = runner.Run("Hello");
+            Result<ProcessResult> result = runner.Run(DEFAULT_APPLICATION_COMMAND);
 
             Assert.That(result.Content.Status, Is.EqualTo(ProcessStatus.Success));
             Assert.That(result.Content.ExitCode, Is.EqualTo(0));
             Assert.That(runner.STDOutput, Is.Not.Empty);
-            Assert.Contains("Hello", runner.STDOutput);
+            Assert.Contains(DEFAULT_APPLICATION_EXPECTED_OUTPUT, runner.STDOutput);
         }
 
+        [Test]
+        public void RunAsyncDefault()
+        {
+            TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION);
+
+            Result<ProcessResult> result = runner.RunAsync(DEFAULT_APPLICATION_COMMAND).Result;
+
+            Assert.That(result.Content.Status, Is.EqualTo(ProcessStatus.Success));
+            Assert.That(result.Content.ExitCode, Is.EqualTo(0));
+            Assert.That(runner.STDOutput, Is.Not.Empty);
+            Assert.Contains(DEFAULT_APPLICATION_EXPECTED_OUTPUT, runner.STDOutput);
+        }
+
+        [Test]
+        public void TryRunDefault()
+        {
+            TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION);
+
+            bool result = runner.TryRun(DEFAULT_APPLICATION_COMMAND);
+
+            Assert.That(result, Is.True);
+            Assert.That(runner.STDOutput, Is.Not.Empty);
+            Assert.Contains(DEFAULT_APPLICATION_EXPECTED_OUTPUT, runner.STDOutput);
+        }
+
+        [Test]
+        public void TryRunAsyncDefault()
+        {
+            TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION);
+
+            bool result = runner.TryRunAsync(DEFAULT_APPLICATION_COMMAND).Result;
+
+            Assert.That(result, Is.True);
+            Assert.That(runner.STDOutput, Is.Not.Empty);
+            Assert.Contains(DEFAULT_APPLICATION_EXPECTED_OUTPUT, runner.STDOutput);
+        }
 
 
 
