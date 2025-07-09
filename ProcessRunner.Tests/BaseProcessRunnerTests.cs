@@ -10,11 +10,11 @@ namespace NanoDNA.ProcessRunner.Tests
 {
     internal class BaseProcessRunnerTests
     {
-        private static readonly string DEFAULT_APPLICATION_COMMAND = OperatingSystem.IsWindows() ? "/c echo Hello" : "Hello";
+        private static readonly string DEFAULT_APPLICATION_COMMAND = OperatingSystem.IsWindows() ? "/c echo Hello" : "-c echo Hello";
 
-        private static readonly string DEFAULT_APPLICATION_FAIL_COMMAND = OperatingSystem.IsWindows() ? "/c echoe Hello" : "Hello";
+        private static readonly string DEFAULT_APPLICATION_FAIL_COMMAND = OperatingSystem.IsWindows() ? "/c echoe Hello" : "-c echoe Hello";
 
-        private static readonly string DEFAULT_VALID_APPLICATION = OperatingSystem.IsWindows() ? "cmd.exe" : "echo";
+        private static readonly string DEFAULT_VALID_APPLICATION = OperatingSystem.IsWindows() ? "cmd.exe" : "/bin/sh";
 
         private const string DEFAULT_APPLICATION_EXPECTED_OUTPUT = "Hello";
 
@@ -448,8 +448,6 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.That(result, Is.False);
             Assert.That(runner.STDError, Is.Not.Empty);
         }
-
-
 
         /*[Test]
         public void SetRedirects()
