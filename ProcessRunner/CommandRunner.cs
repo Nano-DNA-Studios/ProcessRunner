@@ -89,7 +89,7 @@ namespace NanoDNA.ProcessRunner
             }
 
             Logger.Error($"Invalid Process Application: {applicationName}");
-            throw new ArgumentException($"Invalid Process Application: {applicationName}");
+            throw new NotSupportedException($"Invalid Process Application: {applicationName}");
         }
 
         /// <summary>

@@ -132,6 +132,15 @@ namespace NanoDNA.ProcessRunner.Tests
         }
 
         [Test]
+        public void ConstructorWithValidApplicationAndInvalidWorkingDirectory()
+        {
+            string application = GetOSDefaultApplication();
+            string workingDirectory = GetInvalidOSDirectory();
+
+            Assert.Throws< DirectoryNotFoundException>(() => new TestRunner(application, workingDirectory));
+        }
+
+        [Test]
         [TestCase(true, true)]
         [TestCase(true, false)]
         [TestCase(false, true)]
@@ -164,7 +173,7 @@ namespace NanoDNA.ProcessRunner.Tests
         [TestCase(null)]
         public void ConstructorWithInvalidApplication(string applicationName)
         {
-            Assert.Throws<ArgumentException>(() => new TestRunner(applicationName));
+            Assert.Throws<NotSupportedException>(() => new TestRunner(applicationName));
         }
 
         [Test]
@@ -222,7 +231,7 @@ namespace NanoDNA.ProcessRunner.Tests
                 CreateNoWindow = true
             };
 
-            Assert.Throws<ArgumentException>(() => new TestRunner(startInfo));
+            Assert.Throws<NotSupportedException>(() => new TestRunner(startInfo));
         }
 
         [Test]

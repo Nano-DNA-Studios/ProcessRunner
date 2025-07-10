@@ -130,7 +130,7 @@ namespace NanoDNA.ProcessRunner
         /// Initializes the <see cref="BaseProcessRunner"/> by setting the <see cref="StartInfo"/> property and validating the application availability.
         /// </summary>
         /// <param name="startInfo">Starting configuration of the <see cref="BaseProcessRunner"/></param>
-        /// <exception cref="ArgumentException">Thrown if the application does not exist or inaccessible</exception>
+        /// <exception cref="NotSupportedException">Thrown if the application does not exist, is inaccessible or not supported on the platform</exception>
         private void Initialize(ProcessStartInfo startInfo)
         {
             StartInfo = startInfo;
@@ -138,7 +138,7 @@ namespace NanoDNA.ProcessRunner
             if (!IsApplicationAvailable(StartInfo.FileName))
             {
                 Logger.Error($"Application '{StartInfo.FileName}' not found on the system.");
-                throw new ArgumentException($"Application '{StartInfo.FileName}' not found on the system.", nameof(StartInfo.FileName));
+                throw new NotSupportedException($"Application '{StartInfo.FileName}' not found on the system.");
             }
 
             if (!string.IsNullOrEmpty(StartInfo.WorkingDirectory) && !Directory.Exists(StartInfo.WorkingDirectory))
