@@ -449,6 +449,13 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.That(runner.STDError, Is.Not.Empty);
         }
 
+        [Test]
+        public void IsApplicationAvailableValid()
+        {
+            TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION);
+            Assert.That(runner.IsApplicationAvailable(DEFAULT_VALID_APPLICATION), Is.True);
+        }
+
         /*[Test]
         public void SetRedirects()
         {
