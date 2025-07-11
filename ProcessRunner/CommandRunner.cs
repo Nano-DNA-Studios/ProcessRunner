@@ -144,12 +144,18 @@ namespace NanoDNA.ProcessRunner
                         return "powershell.exe";
                 }
             }
-            else if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
+            else if (OperatingSystem.IsLinux())
             {
                 switch (application)
                 {
                     case ProcessApplication.Bash:
                         return "/bin/bash";
+                }
+            }
+            else if ( OperatingSystem.IsMacOS())
+            {
+                switch (application)
+                {
                     case ProcessApplication.Sh:
                         return "/bin/sh";
                 }
