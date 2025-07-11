@@ -37,7 +37,7 @@ namespace NanoDNA.ProcessRunner.Tests
         /// <summary>
         /// The Default Valid Application to run in the tests. Dependent on OS
         /// </summary>
-        protected static readonly string DEFAULT_VALID_APPLICATION = OperatingSystem.IsWindows() ? "cmd.exe" : "/bin/sh";
+        protected static readonly string DEFAULT_VALID_APPLICATION = OperatingSystem.IsWindows() ? "cmd.exe" : "/bin/bash";
 
         /// <summary>
         /// Gets a Invalid Directory for the Current Operating System.
