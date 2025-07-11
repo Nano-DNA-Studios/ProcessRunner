@@ -23,8 +23,9 @@ namespace NanoDNA.ProcessRunner
         /// <summary>
         /// Verifies that the specified application exists on the system.
         /// </summary>
-        /// <param name="applicationName"></param>
-        /// <exception cref="ArgumentException"></exception>
+        /// <param name="applicationName">The name of the Application to Verify</param>
+        /// <exception cref="ArgumentException">Thrown if the Application Name is null or empty</exception>
+        /// <exception cref="NotSupportedException"></exception>
         private void ApplicationExists(string applicationName)
         {
             if (string.IsNullOrWhiteSpace(applicationName))
