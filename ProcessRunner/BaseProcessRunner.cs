@@ -226,8 +226,10 @@ namespace NanoDNA.ProcessRunner
 
             Logger.Info($"Running Command : {command}");
 
-            using (Process? process = Process.Start(StartInfo))
+            using (Process? process = new Process()) //Process.Start(StartInfo)
             {
+                process.StartInfo = StartInfo;
+
                 if (process == null)
                 {
                     Logger.Error($"Process was Null : {command}");
@@ -239,15 +241,17 @@ namespace NanoDNA.ProcessRunner
                 process.OutputDataReceived += (sender, data) => SaveSTDOutput(sender, data);
                 process.ErrorDataReceived += (sender, data) => SaveSTDError(sender, data);
 
+                process.Start();
+
                 if (STDOutputRedirect)
                 {
-                    _stdOutput.AddRange(process.StandardOutput.ReadToEnd().Split('\n', StringSplitOptions.RemoveEmptyEntries));
+                    //_stdOutput.AddRange(process.StandardOutput.ReadToEnd().Split('\n', StringSplitOptions.RemoveEmptyEntries));
                     process.BeginOutputReadLine();
                 }
 
                 if (STDErrorRedirect)
                 {
-                    _stdError.AddRange(process.StandardError.ReadToEnd().Split('\n', StringSplitOptions.RemoveEmptyEntries));
+                    //_stdError.AddRange(process.StandardError.ReadToEnd().Split('\n', StringSplitOptions.RemoveEmptyEntries));
                     process.BeginErrorReadLine();
                 }
 
