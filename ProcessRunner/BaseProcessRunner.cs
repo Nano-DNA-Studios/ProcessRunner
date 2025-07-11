@@ -199,6 +199,8 @@ namespace NanoDNA.ProcessRunner
             if (output == null)
                 return;
 
+            Logger.Info($"STDOutput : {output}");
+
             _stdOutput.Add(output);
         }
 
@@ -213,6 +215,8 @@ namespace NanoDNA.ProcessRunner
 
             if (output == null)
                 return;
+
+            Logger.Info($"STDError : {output}");
 
             _stdError.Add(output);
         }
@@ -241,7 +245,7 @@ namespace NanoDNA.ProcessRunner
                 process.OutputDataReceived += STDOutputReceived;
                 process.ErrorDataReceived += STDErrorReceived;
 
-                
+                process.Start();
 
                 if (STDOutputRedirect)
                 {
@@ -255,7 +259,10 @@ namespace NanoDNA.ProcessRunner
                     process.BeginErrorReadLine();
                 }
 
-                process.Start();
+                if (STDOutputRedirect)
+                    process.CancelOutputRead();
+                if (STDErrorRedirect)
+                    process.CancelErrorRead();
 
                 process.WaitForExit();
                 process.WaitForExit();
