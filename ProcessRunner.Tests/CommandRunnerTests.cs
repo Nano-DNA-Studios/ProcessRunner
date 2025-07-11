@@ -121,7 +121,6 @@ namespace NanoDNA.ProcessRunner.Tests
         [Test]
         [TestCase(ProcessApplication.CMD, PlatformOperatingSystem.Windows)]
         [TestCase(ProcessApplication.Bash, PlatformOperatingSystem.Unix)]
-        [TestCase(ProcessApplication.Sh, PlatformOperatingSystem.OSX)]
         public void CommandRunnerGetDefaultOSApplication(ProcessApplication application, PlatformOperatingSystem OS)
         {
             if (!OnAppropriateOS(OS))
