@@ -32,7 +32,7 @@ namespace NanoDNA.ProcessRunner.Tests
         /// <summary>
         /// The Default Application Command to run in the tests that will fail. Dependent on OS
         /// </summary>
-        protected static readonly string DEFAULT_APPLICATION_FAIL_COMMAND = OperatingSystem.IsWindows() ? "/c echoe Hello World" : "-c \"echo Hello World\"";
+        protected static readonly string DEFAULT_APPLICATION_FAIL_COMMAND = OperatingSystem.IsWindows() ? "/c echoe Hello World" : "-c \"echoe Hello World\"";
 
         /// <summary>
         /// The Default Valid Application to run in the tests. Dependent on OS

@@ -230,41 +230,32 @@ namespace NanoDNA.ProcessRunner
 
             Logger.Info($"Running Command : {command}");
 
-            using (Process? process = new Process()) //Process.Start(StartInfo)
+            using (Process? process = Process.Start(StartInfo)) //Process.Start(StartInfo)
             {
-                process.StartInfo = StartInfo;
-
                 if (process == null)
                 {
                     Logger.Error($"Process was Null : {command}");
                     return new Result<ProcessResult>(new ProcessResult(ProcessStatus.Failed, FAILED_TO_RUN_EXIT_CODE), "Process is null");
                 }
-                
 
-                process.OutputDataReceived += (sender, data) => SaveSTDOutput(sender, data);
-                process.ErrorDataReceived += (sender, data) => SaveSTDError(sender, data);
                 process.OutputDataReceived += STDOutputReceived;
                 process.ErrorDataReceived += STDErrorReceived;
+                process.OutputDataReceived += (sender, data) => SaveSTDOutput(sender, data);
+                process.ErrorDataReceived += (sender, data) => SaveSTDError(sender, data);
 
-                process.Start();
+                //process.Start();
 
-                if (process.HasExited)
-                    _stdOutput.AddRange(process.StandardOutput.ReadToEnd().Split('\n', StringSplitOptions.RemoveEmptyEntries));
-                else
-                {
-                    if (STDOutputRedirect)
-                    {
-                        //_stdOutput.AddRange(process.StandardOutput.ReadToEnd().Split('\n', StringSplitOptions.RemoveEmptyEntries));
-                        process.BeginOutputReadLine();
-                    }
+                /* if (process.HasExited)
+                     _stdOutput.AddRange(process.StandardOutput.ReadToEnd().Split('\n', StringSplitOptions.RemoveEmptyEntries));
+                 else
+                 {*/
+                if (STDOutputRedirect)
+                    process.BeginOutputReadLine();
 
-                    if (STDErrorRedirect)
-                    {
-                        //_stdError.AddRange(process.StandardError.ReadToEnd().Split('\n', StringSplitOptions.RemoveEmptyEntries));
-                        process.BeginErrorReadLine();
-                    }
-                }
-                
+                if (STDErrorRedirect)
+                    process.BeginErrorReadLine();
+                //}
+
                 process.WaitForExit();
 
                 if (process.ExitCode == 0)
