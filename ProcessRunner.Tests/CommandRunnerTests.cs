@@ -59,8 +59,8 @@ namespace NanoDNA.ProcessRunner.Tests
         /// <param name="OS">Operating System to test on</param>
         [Test]
         [TestCase("cmd.exe", PlatformOperatingSystem.Windows)]
-        [TestCase("bash", PlatformOperatingSystem.Unix)]
-        [TestCase("sh", PlatformOperatingSystem.Unix)]
+        [TestCase("/bin/bash", PlatformOperatingSystem.Unix)]
+        [TestCase("/bin/sh", PlatformOperatingSystem.Unix)]
         [TestCase("powershell.exe", PlatformOperatingSystem.Windows)]
         public void CommandRunnerConstructor_ApplicationName(string applicationName, PlatformOperatingSystem OS)
         {
@@ -121,7 +121,7 @@ namespace NanoDNA.ProcessRunner.Tests
         [Test]
         [TestCase(ProcessApplication.CMD, PlatformOperatingSystem.Windows)]
         [TestCase(ProcessApplication.Bash, PlatformOperatingSystem.Unix)]
-        [TestCase(ProcessApplication.Sh, PlatformOperatingSystem.Unix)]
+        [TestCase(ProcessApplication.Sh, PlatformOperatingSystem.OSX)]
         public void CommandRunnerGetDefaultOSApplication(ProcessApplication application, PlatformOperatingSystem OS)
         {
             if (!OnAppropriateOS(OS))

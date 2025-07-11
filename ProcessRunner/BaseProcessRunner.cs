@@ -224,7 +224,7 @@ namespace NanoDNA.ProcessRunner
 
             string command = $"{ApplicationName} {args}";
 
-            Logger.Debug($"Running Command : {command}");
+            Logger.Info($"Running Command : {command}");
 
             using (Process? process = Process.Start(StartInfo))
             {
@@ -249,7 +249,7 @@ namespace NanoDNA.ProcessRunner
 
                 if (process.ExitCode == 0)
                 {
-                    Logger.Debug($"Successfully Ran Command : {command}");
+                    Logger.Info($"Successfully Ran Command : {command}");
                     return new Result<ProcessResult>(new ProcessResult(ProcessStatus.Success, process.ExitCode), $"Command executed successfully: {command}");
                 }
 
