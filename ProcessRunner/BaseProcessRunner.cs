@@ -240,10 +240,16 @@ namespace NanoDNA.ProcessRunner
                 process.ErrorDataReceived += (sender, data) => SaveSTDError(sender, data);
 
                 if (STDOutputRedirect)
+                {
+                    _stdOutput.AddRange(process.StandardOutput.ReadToEnd().Split('\n', StringSplitOptions.RemoveEmptyEntries));
                     process.BeginOutputReadLine();
+                }
 
                 if (STDErrorRedirect)
+                {
+                    _stdError.AddRange(process.StandardError.ReadToEnd().Split('\n', StringSplitOptions.RemoveEmptyEntries));
                     process.BeginErrorReadLine();
+                }
 
                 process.WaitForExit();
 
