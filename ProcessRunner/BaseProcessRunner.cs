@@ -259,10 +259,11 @@ namespace NanoDNA.ProcessRunner
                     process.BeginErrorReadLine();
                 }
 
-                if (STDOutputRedirect)
+                if (STDOutput.Length == 0)
+                {
                     process.CancelOutputRead();
-                if (STDErrorRedirect)
-                    process.CancelErrorRead();
+                    _stdOutput.AddRange(process.StandardOutput.ReadToEnd().Split('\n', StringSplitOptions.RemoveEmptyEntries));
+                }
 
                 process.WaitForExit();
                 process.WaitForExit();
