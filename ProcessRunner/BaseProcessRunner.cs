@@ -230,7 +230,7 @@ namespace NanoDNA.ProcessRunner
 
             Logger.Info($"Running Command : {command}");
 
-            using (Process? process = Process.Start(StartInfo)) //Process.Start(StartInfo)
+            using (Process? process = Process.Start(StartInfo))
             {
                 if (process == null)
                 {
@@ -243,18 +243,12 @@ namespace NanoDNA.ProcessRunner
                 process.OutputDataReceived += (sender, data) => SaveSTDOutput(sender, data);
                 process.ErrorDataReceived += (sender, data) => SaveSTDError(sender, data);
 
-                //process.Start();
-
-                /* if (process.HasExited)
-                     _stdOutput.AddRange(process.StandardOutput.ReadToEnd().Split('\n', StringSplitOptions.RemoveEmptyEntries));
-                 else
-                 {*/
+                
                 if (STDOutputRedirect)
                     process.BeginOutputReadLine();
 
                 if (STDErrorRedirect)
                     process.BeginErrorReadLine();
-                //}
 
                 process.WaitForExit();
 
