@@ -239,6 +239,7 @@ namespace NanoDNA.ProcessRunner
                     Logger.Error($"Process was Null : {command}");
                     return new Result<ProcessResult>(new ProcessResult(ProcessStatus.Failed, FAILED_TO_RUN_EXIT_CODE), "Process is null");
                 }
+                
 
                 process.OutputDataReceived += (sender, data) => SaveSTDOutput(sender, data);
                 process.ErrorDataReceived += (sender, data) => SaveSTDError(sender, data);
@@ -247,25 +248,23 @@ namespace NanoDNA.ProcessRunner
 
                 process.Start();
 
-                if (STDOutputRedirect)
-                {
-                    //_stdOutput.AddRange(process.StandardOutput.ReadToEnd().Split('\n', StringSplitOptions.RemoveEmptyEntries));
-                    process.BeginOutputReadLine();
-                }
-
-                if (STDErrorRedirect)
-                {
-                    //_stdError.AddRange(process.StandardError.ReadToEnd().Split('\n', StringSplitOptions.RemoveEmptyEntries));
-                    process.BeginErrorReadLine();
-                }
-
-                if (STDOutput.Length == 0)
-                {
-                    process.CancelOutputRead();
+                if (process.HasExited)
                     _stdOutput.AddRange(process.StandardOutput.ReadToEnd().Split('\n', StringSplitOptions.RemoveEmptyEntries));
-                }
+                else
+                {
+                    if (STDOutputRedirect)
+                    {
+                        //_stdOutput.AddRange(process.StandardOutput.ReadToEnd().Split('\n', StringSplitOptions.RemoveEmptyEntries));
+                        process.BeginOutputReadLine();
+                    }
 
-                process.WaitForExit();
+                    if (STDErrorRedirect)
+                    {
+                        //_stdError.AddRange(process.StandardError.ReadToEnd().Split('\n', StringSplitOptions.RemoveEmptyEntries));
+                        process.BeginErrorReadLine();
+                    }
+                }
+                
                 process.WaitForExit();
 
                 if (process.ExitCode == 0)
