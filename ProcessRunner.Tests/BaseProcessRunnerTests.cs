@@ -7,36 +7,36 @@ using NanoDNA.ProcessRunner.Enums;
 
 namespace NanoDNA.ProcessRunner.Tests
 {
+    /// <summary>
+    /// Unit Tests for the <see cref="BaseProcessRunner"/> class.
+    /// </summary>
     internal class BaseProcessRunnerTests : BaseUnitTest
     {
-       /* private string GetInvalidOSDirectory()
-        {
-            if (OnAppropriateOS(PlatformOperatingSystem.Windows))
-                return "C:\\non_existent_dir";
-            else if (OnAppropriateOS(PlatformOperatingSystem.Unix) || OnAppropriateOS(PlatformOperatingSystem.OSX))
-                return "/non_existent_dir";
-            else
-                throw new PlatformNotSupportedException("Unsupported operating system.");
-        }
-
-        private string GetValidOSDirectory()
-        {
-            if (OnAppropriateOS(PlatformOperatingSystem.Windows))
-                return Directory.GetCurrentDirectory();
-            else if (OnAppropriateOS(PlatformOperatingSystem.Unix) || OnAppropriateOS(PlatformOperatingSystem.OSX))
-                return Directory.GetCurrentDirectory();
-            else
-                throw new PlatformNotSupportedException("Unsupported operating system.");
-        }*/
-
+        /// <summary>
+        /// Dummy class that inherits <see cref="BaseProcessRunner"/>
+        /// </summary>
         private class TestRunner : BaseProcessRunner
         {
+            /// <summary>
+            /// Default Constructor for the <see cref="TestRunner"/> class.
+            /// </summary>
+            /// <param name="application">Name of the application to execute</param>
+            /// <param name="workingDirectory">Working directory for the process, defaults to the current directory if unspecified</param>
+            /// <param name="stdOut">Whether to redirect the standard output, defaults to false if unspecified</param>
+            /// <param name="stdErr">Whether to redirect the standard error, defaults to false if unspecified</param>
             public TestRunner(string application, string workingDirectory = "", bool stdOut = true, bool stdErr = true)
                 : base(application, workingDirectory, stdOut, stdErr) { }
 
+            /// <summary>
+            /// Constructor for the <see cref="TestRunner"/> class using a <see cref="ProcessStartInfo"/> object.
+            /// </summary>
+            /// <param name="info">Process Start Info Instance</param>
             public TestRunner(ProcessStartInfo info) : base(info) { }
         }
 
+        /// <summary>
+        /// Tests the constructor of <see cref="BaseProcessRunner(string, string, bool, bool)"/> with a valid application name.
+        /// </summary>
         [Test]
         public void ConstructorWithValidApplication()
         {
@@ -61,6 +61,9 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.That(runner.IsApplicationAvailable(application), Is.True);
         }
 
+        /// <summary>
+        /// Tests the constructor of <see cref="BaseProcessRunner(string, string, bool, bool)"/> with a valid application name and working directory.
+        /// </summary>
         [Test]
         public void ConstructorWithValidApplicationAndWorkingDirectory()
         {
@@ -86,15 +89,23 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.That(runner.IsApplicationAvailable(application), Is.True);
         }
 
+        /// <summary>
+        /// Tests the constructor of <see cref="BaseProcessRunner(string, string, bool, bool)"/> with a valid application name and an invalid working directory.
+        /// </summary>
         [Test]
         public void ConstructorWithValidApplicationAndInvalidWorkingDirectory()
         {
             string application = GetOSDefaultApplication();
             string workingDirectory = GetInvalidOSDirectory();
 
-            Assert.Throws< DirectoryNotFoundException>(() => new TestRunner(application, workingDirectory));
+            Assert.Throws<DirectoryNotFoundException>(() => new TestRunner(application, workingDirectory));
         }
 
+        /// <summary>
+        /// Tests the constructor of <see cref="BaseProcessRunner(string, string, bool, bool)"/> with redirects for standard output and error.
+        /// </summary>
+        /// <param name="stdOut">The Value to set STDOutput</param>
+        /// <param name="stdErr">The Value to set STDError</param>
         [Test]
         [TestCase(true, true)]
         [TestCase(true, false)]
@@ -123,14 +134,23 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.That(runner.IsApplicationAvailable(application), Is.True);
         }
 
+        /// <summary>
+        /// Tests the constructor of <see cref="BaseProcessRunner(string, string, bool, bool)"/> with an invalid application name.
+        /// </summary>
+        /// <param name="applicationName">The name of the application</param>
         [Test]
         [TestCase(DEFAULT_NON_EXISTENT_APPLICATION)]
         [TestCase(null)]
+        [TestCase("")]
+        [TestCase(" ")]
         public void ConstructorWithInvalidApplication(string applicationName)
         {
             Assert.Throws<NotSupportedException>(() => new TestRunner(applicationName));
         }
 
+        /// <summary>
+        /// Tests the constructor of <see cref="BaseProcessRunner(string, string, bool, bool)"/> with an invalid working directory.
+        /// </summary>
         [Test]
         public void ConstructorWithInvalidWorkingDirectory()
         {
@@ -140,9 +160,11 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.Throws<DirectoryNotFoundException>(() => new TestRunner(application, invalidDirectory));
         }
 
-
+        /// <summary>
+        /// Tests the constructor of <see cref="BaseProcessRunner(ProcessStartInfo)"/> with a <see cref="ProcessStartInfo"/> object.
+        /// </summary>
         [Test]
-        public void ConstructorWithStartInfo ()
+        public void ConstructorWithStartInfo()
         {
             string application = GetOSDefaultApplication();
 
@@ -174,6 +196,9 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.That(runner.IsApplicationAvailable(application), Is.True);
         }
 
+        /// <summary>
+        /// Tests the constructor of <see cref="BaseProcessRunner(ProcessStartInfo)"/> with an invalid <see cref="ProcessStartInfo"/> object.
+        /// </summary>
         [Test]
         public void ConstructorWithInvalidApplicationStartInfo()
         {
@@ -189,6 +214,9 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.Throws<NotSupportedException>(() => new TestRunner(startInfo));
         }
 
+        /// <summary>
+        /// Tests the constructor of <see cref="BaseProcessRunner(ProcessStartInfo)"/> with an invalid working directory in the <see cref="ProcessStartInfo"/> object.
+        /// </summary>
         [Test]
         public void ConstructorWithInvalidWorkingDirectoryStartInfo()
         {
@@ -208,12 +236,17 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.Throws<DirectoryNotFoundException>(() => new TestRunner(startInfo));
         }
 
+        /// <summary>
+        /// Tests the <see cref="BaseProcessRunner.SetStandardOutputRedirect(bool)"/>  method of <see cref="BaseProcessRunner"/> to change the standard output redirect status.
+        /// </summary>
+        /// <param name="startStatus">The Starting Status of the STDOutput</param>
+        /// <param name="endStatus">The Ending Status of the STDOutput</param>
         [Test]
         [TestCase(true, true)]
         [TestCase(true, false)]
         [TestCase(false, true)]
         [TestCase(false, false)]
-        public void SetSTDOutputRedirect (bool startStatus, bool endStatus)
+        public void SetSTDOutputRedirect(bool startStatus, bool endStatus)
         {
             TestRunner testRunner = new TestRunner(GetOSDefaultApplication(), stdOut: startStatus);
 
@@ -226,6 +259,11 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.That(testRunner.StartInfo.RedirectStandardOutput, Is.EqualTo(endStatus));
         }
 
+        /// <summary>
+        /// Tests the <see cref="BaseProcessRunner.SetStandardErrorRedirect(bool)"/> method of <see cref="BaseProcessRunner"/> to change the standard error redirect status.
+        /// </summary>
+        /// <param name="startStatus">The Starting Status of the STDError</param>
+        /// <param name="endStatus">The Ending Status of the STDError</param>
         [Test]
         [TestCase(true, true)]
         [TestCase(true, false)]
@@ -244,6 +282,9 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.That(testRunner.StartInfo.RedirectStandardError, Is.EqualTo(endStatus));
         }
 
+        /// <summary>
+        /// Tests the <see cref="BaseProcessRunner.SetWorkingDirectory(string)"/> method of <see cref="BaseProcessRunner"/> to set a valid working directory.
+        /// </summary>
         [Test]
         public void SetValidWorkingDirectory()
         {
@@ -259,6 +300,9 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.That(testRunner.StartInfo.WorkingDirectory, Is.EqualTo(workingDirectory));
         }
 
+        /// <summary>
+        /// Tests the <see cref="BaseProcessRunner.SetWorkingDirectory(string)"/> method of <see cref="BaseProcessRunner"/> to set an invalid working directory.
+        /// </summary>
         [Test]
         public void SetInvalidWorkingDirectory()
         {
@@ -271,6 +315,9 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.Throws<DirectoryNotFoundException>(() => testRunner.SetWorkingDirectory(invalidDirectory));
         }
 
+        /// <summary>
+        /// Tests the <see cref="BaseProcessRunner.Run(string)"/> method of <see cref="BaseProcessRunner"/> to run a default command.
+        /// </summary>
         [Test]
         public void RunDefault()
         {
@@ -284,6 +331,9 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.Contains(DEFAULT_PROCESS_OUTPUT, runner.STDOutput);
         }
 
+        /// <summary>
+        /// Tests the <see cref="BaseProcessRunner.Run(string)"/> method of <see cref="BaseProcessRunner"/> to run a command without redirecting output.
+        /// </summary>
         [Test]
         public void RunNoRedirect()
         {
@@ -296,8 +346,11 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.That(runner.STDOutput, Is.Empty);
         }
 
+        /// <summary>
+        /// Tests the <see cref="BaseProcessRunner.Run(string)"/> method of <see cref="BaseProcessRunner"/> to run a command that will fail.
+        /// </summary>
         [Test]
-        public void RunDefaultFail ()
+        public void RunDefaultFail()
         {
             TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION);
 
@@ -308,6 +361,9 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.That(runner.STDError, Is.Not.Empty);
         }
 
+        /// <summary>
+        /// Tests the <see cref="BaseProcessRunner.RunAsync(string)"/> method of <see cref="BaseProcessRunner"/> to run a default command asynchronously.
+        /// </summary>
         [Test]
         public void RunAsyncDefault()
         {
@@ -321,6 +377,9 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.Contains(DEFAULT_PROCESS_OUTPUT, runner.STDOutput);
         }
 
+        /// <summary>
+        /// Tests the <see cref="BaseProcessRunner.RunAsync(string)"/> method of <see cref="BaseProcessRunner"/> to run a command without redirecting output asynchronously.
+        /// </summary>
         [Test]
         public void RunAsyncNoRedirect()
         {
@@ -333,6 +392,9 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.That(runner.STDOutput, Is.Empty);
         }
 
+        /// <summary>
+        /// Tests the <see cref="BaseProcessRunner.RunAsync(string)"/> method of <see cref="BaseProcessRunner"/> to run a command that will fail asynchronously.
+        /// </summary>
         [Test]
         public void RunAsyncDefaultFail()
         {
@@ -345,6 +407,9 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.That(runner.STDError, Is.Not.Empty);
         }
 
+        /// <summary>
+        /// Tests the <see cref="BaseProcessRunner.TryRun(string)"/> method of <see cref="BaseProcessRunner"/> to run a default command.
+        /// </summary>
         [Test]
         public void TryRunDefault()
         {
@@ -357,6 +422,9 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.Contains(DEFAULT_PROCESS_OUTPUT, runner.STDOutput);
         }
 
+        /// <summary>
+        /// Tests the <see cref="BaseProcessRunner.TryRun(string)"/> method of <see cref="BaseProcessRunner"/> to run a command without redirecting output.
+        /// </summary>
         [Test]
         public void TryRunNoRedirect()
         {
@@ -368,6 +436,9 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.That(runner.STDOutput, Is.Empty);
         }
 
+        /// <summary>
+        /// Tests the <see cref="BaseProcessRunner.TryRun(string)"/> method of <see cref="BaseProcessRunner"/> to run a command that will fail.
+        /// </summary>
         [Test]
         public void TryRunDefaultFail()
         {
@@ -379,6 +450,9 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.That(runner.STDError, Is.Not.Empty);
         }
 
+        /// <summary>
+        /// Tests the <see cref="BaseProcessRunner.TryRunAsync(string)"/> method of <see cref="BaseProcessRunner"/> to run a default command asynchronously.
+        /// </summary>
         [Test]
         public void TryRunAsyncDefault()
         {
@@ -391,6 +465,9 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.Contains(DEFAULT_PROCESS_OUTPUT, runner.STDOutput);
         }
 
+        /// <summary>
+        /// Tests the <see cref="BaseProcessRunner.TryRunAsync(string)"/> method of <see cref="BaseProcessRunner"/> to run a command without redirecting output asynchronously.
+        /// </summary>
         [Test]
         public void TryRunAsyncNoRedirect()
         {
@@ -402,6 +479,9 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.That(runner.STDOutput, Is.Empty);
         }
 
+        /// <summary>
+        /// Tests the <see cref="BaseProcessRunner.TryRunAsync(string)"/> method of <see cref="BaseProcessRunner"/> to run a command that will fail asynchronously.
+        /// </summary>
         [Test]
         public void TryRunAsyncDefaultFail()
         {
@@ -413,6 +493,9 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.That(runner.STDError, Is.Not.Empty);
         }
 
+        /// <summary>
+        /// Tests the <see cref="BaseProcessRunner.IsApplicationAvailable(string)"/> method of <see cref="BaseProcessRunner"/> to check if a valid application is available.
+        /// </summary>
         [Test]
         public void IsApplicationAvailableValid()
         {
