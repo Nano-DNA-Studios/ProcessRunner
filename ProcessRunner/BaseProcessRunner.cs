@@ -236,10 +236,10 @@ namespace NanoDNA.ProcessRunner
                     return new Result<ProcessResult>(new ProcessResult(ProcessStatus.Failed, FAILED_TO_RUN_EXIT_CODE), "Process is null");
                 }
 
-                process.OutputDataReceived += STDOutputReceived;
-                process.ErrorDataReceived += STDErrorReceived;
                 process.OutputDataReceived += (sender, data) => SaveSTDOutput(sender, data);
                 process.ErrorDataReceived += (sender, data) => SaveSTDError(sender, data);
+                process.OutputDataReceived += STDOutputReceived;
+                process.ErrorDataReceived += STDErrorReceived;
 
                 process.Start();
 
@@ -255,6 +255,7 @@ namespace NanoDNA.ProcessRunner
                     process.BeginErrorReadLine();
                 }
 
+                process.WaitForExit();
                 process.WaitForExit();
 
                 if (process.ExitCode == 0)
