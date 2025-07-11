@@ -6,7 +6,7 @@ namespace NanoDNA.ProcessRunner
     /// <summary>
     /// Used as a Wrapper for the <see cref="BaseProcessRunner"/> to run a Processes through.
     /// </summary>
-    internal class ProcessRunner : BaseProcessRunner
+    public class ProcessRunner : BaseProcessRunner
     {
         /// <summary>
         /// Initializes a new Instance of <see cref="CommandRunner"/> using the String Name of the <see cref="ProcessApplication"/>.
@@ -31,7 +31,7 @@ namespace NanoDNA.ProcessRunner
                 throw new ArgumentException("Application name cannot be null or empty.", nameof(applicationName));
 
             if (!IsApplicationAvailable(applicationName))
-                throw new ArgumentException($"Application '{applicationName}' not found on the system.", nameof(applicationName));
+                throw new NotSupportedException($"Application '{applicationName}' not found on the system.");
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestPlatform.PlatformAbstractions;
 using NanoDNA.ProcessRunner.Enums;
+using NanoDNA.ProcessRunner.Results;
 using NUnit.Framework;
 using System;
 using System.Diagnostics;
@@ -11,14 +12,23 @@ namespace NanoDNA.ProcessRunner.Tests
     /// </summary>
     internal class CommandRunnerTests
     {
+        private const string DEFAULT_COMMAND = "echo Hello World";
+
+        private const string DEFAULT_COMMAND_OUTPUT = "Hello World";
+
+        /// <summary>
+        /// Gets the Default Application for the Current Operating System
+        /// </summary>
+        /// <returns>The Path to the Default OS Command Runner Application</returns>
+        /// <exception cref="PlatformNotSupportedException">Thrown if the Application is not supported by the Library</exception>
         private string GetOSDefaultApplication()
         {
             if (OnAppropriateOS(PlatformOperatingSystem.Windows))
                 return "cmd.exe";
             else if (OnAppropriateOS(PlatformOperatingSystem.Unix))
-                return "bash";
+                return "/bin/bash";
             else if (OnAppropriateOS(PlatformOperatingSystem.OSX))
-                return "sh";
+                return "/bin/sh";
             else
                 throw new PlatformNotSupportedException("Unsupported operating system.");
         }
@@ -50,7 +60,7 @@ namespace NanoDNA.ProcessRunner.Tests
         [TestCase(ProcessApplication.Bash, PlatformOperatingSystem.Unix)]
         [TestCase(ProcessApplication.Sh, PlatformOperatingSystem.Unix)]
         [TestCase(ProcessApplication.PowerShell, PlatformOperatingSystem.Windows)]
-        public void CommandRunnerConstructor_ProcessApplication (ProcessApplication application, PlatformOperatingSystem OS)
+        public void CommandRunnerConstructor_ProcessApplication(ProcessApplication application, PlatformOperatingSystem OS)
         {
             if (!OnAppropriateOS(OS))
             {
@@ -128,6 +138,45 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.That(commandRunner.StartInfo.RedirectStandardError, Is.EqualTo(true));
         }
 
+        [Test]
+        [TestCase(ProcessApplication.CMD, PlatformOperatingSystem.Windows)]
+        [TestCase(ProcessApplication.Bash, PlatformOperatingSystem.Unix)]
+        [TestCase(ProcessApplication.Sh, PlatformOperatingSystem.OSX)]
+        public void CommandRunnerGetDefaultOSApplication(ProcessApplication application, PlatformOperatingSystem OS)
+        {
+            if (!OnAppropriateOS(OS))
+            {
+                Assert.Throws<NotSupportedException>(() => new CommandRunner(application));
+                return;
+            }
+
+            Assert.That(CommandRunner.GetDefaultOSApplication(), Is.EqualTo(application), "Default Platform Application does not match");
+        }
+
+        [Test]
+        [TestCase(ProcessApplication.CMD, PlatformOperatingSystem.Windows)]
+        [TestCase(ProcessApplication.Bash, PlatformOperatingSystem.Unix)]
+        [TestCase(ProcessApplication.Sh, PlatformOperatingSystem.Unix)]
+        [TestCase(ProcessApplication.PowerShell, PlatformOperatingSystem.Windows)]
+        public void CommandRunnerRun(ProcessApplication application, PlatformOperatingSystem OS)
+        {
+            if (!OnAppropriateOS(OS))
+            {
+                Assert.Throws<NotSupportedException>(() => new CommandRunner(application));
+                return;
+            }
+
+            CommandRunner commandRunner = new CommandRunner();
+
+            Result<ProcessResult> result = commandRunner.Run(DEFAULT_COMMAND);
+
+            Assert.That(result, Is.Not.Null, "Command Run Result should not be null");
+            Assert.That(result.Content, Is.Not.Null, "Command Result Content should not be null");
+            Assert.That(result.Content.Status, Is.EqualTo(ProcessStatus.Success), $"Command Result Status should be {ProcessStatus.Success}");
+            Assert.That(commandRunner.STDOutput.Length, Is.GreaterThan(0), "STDOutput should not be empty");
+            Assert.That(commandRunner.STDError.Length, Is.EqualTo(0), "STDError should be empty");
+            Assert.That(commandRunner.STDOutput[0], Is.EqualTo(DEFAULT_COMMAND_OUTPUT), $"STDOutput does not match expected output : {DEFAULT_COMMAND_OUTPUT}");
+        }
 
 
         /*

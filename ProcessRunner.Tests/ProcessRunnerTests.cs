@@ -1,33 +1,50 @@
 ﻿using NUnit.Framework;
-using NanoDNA.ProcessRunner.Enums;
-using NanoDNA.ProcessRunner.Results;
+using Microsoft.VisualStudio.TestPlatform.PlatformAbstractions;
+using System;
 
 namespace NanoDNA.ProcessRunner.Tests
 {
-    internal class ProcessResultTests
+    internal class ProcessRunnerTests
     {
-       /* [Test]
-        public void Constructor_SetsStatusAndExitCode()
+        /// <summary>
+        /// Checks if the Current Operating System is the same as the one passed in
+        /// </summary>
+        /// <param name="OS">Operating System we are checking for</param>
+        /// <returns>True if the OS's Match, False otherwise</returns>
+        private bool OnAppropriateOS(PlatformOperatingSystem OS)
         {
-            var result = new ProcessResult(ProcessStatus.Success, 0);
+            switch (OS)
+            {
+                case PlatformOperatingSystem.Windows:
+                    return OperatingSystem.IsWindows();
 
-            Assert.That(result.Status, Is.EqualTo(ProcessStatus.Success));
-            Assert.That(result.ExitCode, Is.EqualTo(0));
+                case PlatformOperatingSystem.Unix:
+                    return OperatingSystem.IsLinux();
+
+                case PlatformOperatingSystem.OSX:
+                    return OperatingSystem.IsMacOS();
+            }
+
+            return false;
         }
 
         [Test]
-        public void Constructor_AllStatusValues()
+        [TestCase("cmd.exe", PlatformOperatingSystem.Windows)]
+        [TestCase("/bin/bash", PlatformOperatingSystem.Unix)]
+        [TestCase("/bin/sh", PlatformOperatingSystem.Unix)]
+        [TestCase("powershell.exe", PlatformOperatingSystem.Windows)]
+        public void ProcessRunnerConstructor_ValidApplication (string applicationName, PlatformOperatingSystem OS)
         {
-            var success = new ProcessResult(ProcessStatus.Success, 0);
-            var failed = new ProcessResult(ProcessStatus.Failed, 1);
-            var didNotRun = new ProcessResult(ProcessStatus.DidNotRun, -1);
-
-            Assert.Multiple(() =>
+            if (!OnAppropriateOS(OS))
             {
-                Assert.That(success.Status, Is.EqualTo(ProcessStatus.Success));
-                Assert.That(failed.Status, Is.EqualTo(ProcessStatus.Failed));
-                Assert.That(didNotRun.Status, Is.EqualTo(ProcessStatus.DidNotRun));
-            });
-        }*/
+                Assert.Throws<NotSupportedException>(() => new ProcessRunner(applicationName));
+                return;
+            }
+
+            ProcessRunner processRunner = new ProcessRunner(applicationName);
+
+            Assert.IsNotNull(processRunner);
+            Assert.That(processRunner.ApplicationName, Is.EqualTo(applicationName));
+        }
     }
 }
