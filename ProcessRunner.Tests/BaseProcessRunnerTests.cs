@@ -1,6 +1,5 @@
 ﻿using NUnit.Framework;
 using System.Diagnostics;
-using Microsoft.VisualStudio.TestPlatform.PlatformAbstractions;
 using System;
 using System.IO;
 using NanoDNA.ProcessRunner.Results;
@@ -8,53 +7,9 @@ using NanoDNA.ProcessRunner.Enums;
 
 namespace NanoDNA.ProcessRunner.Tests
 {
-    internal class BaseProcessRunnerTests
+    internal class BaseProcessRunnerTests : BaseUnitTest
     {
-        private static readonly string DEFAULT_APPLICATION_COMMAND = OperatingSystem.IsWindows() ? "/c echo Hello" : "-c echo Hello";
-
-        private static readonly string DEFAULT_APPLICATION_FAIL_COMMAND = OperatingSystem.IsWindows() ? "/c echoe Hello" : "-c echoe Hello";
-
-        private static readonly string DEFAULT_VALID_APPLICATION = OperatingSystem.IsWindows() ? "cmd.exe" : "/bin/sh";
-
-        private const string DEFAULT_APPLICATION_EXPECTED_OUTPUT = "Hello";
-
-        private const string DEFAULT_NON_EXISTENT_APPLICATION = "non_existent_app";
-
-        /// <summary>
-        /// Checks if the Current Operating System is the same as the one passed in
-        /// </summary>
-        /// <param name="OS">Operating System we are checking for</param>
-        /// <returns>True if the OS's Match, False otherwise</returns>
-        private bool OnAppropriateOS(PlatformOperatingSystem OS)
-        {
-            switch (OS)
-            {
-                case PlatformOperatingSystem.Windows:
-                    return OperatingSystem.IsWindows();
-
-                case PlatformOperatingSystem.Unix:
-                    return OperatingSystem.IsLinux();
-
-                case PlatformOperatingSystem.OSX:
-                    return OperatingSystem.IsMacOS();
-            }
-
-            return false;
-        }
-
-        private string GetOSDefaultApplication()
-        {
-            if (OnAppropriateOS(PlatformOperatingSystem.Windows))
-                return "cmd";
-            else if (OnAppropriateOS(PlatformOperatingSystem.Unix))
-                return "bash";
-            else if (OnAppropriateOS(PlatformOperatingSystem.OSX))
-                return "sh";
-            else
-                throw new PlatformNotSupportedException("Unsupported operating system.");
-        }
-
-        private string GetInvalidOSDirectory()
+       /* private string GetInvalidOSDirectory()
         {
             if (OnAppropriateOS(PlatformOperatingSystem.Windows))
                 return "C:\\non_existent_dir";
@@ -72,7 +27,7 @@ namespace NanoDNA.ProcessRunner.Tests
                 return Directory.GetCurrentDirectory();
             else
                 throw new PlatformNotSupportedException("Unsupported operating system.");
-        }
+        }*/
 
         private class TestRunner : BaseProcessRunner
         {
@@ -326,7 +281,7 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.That(result.Content.Status, Is.EqualTo(ProcessStatus.Success));
             Assert.That(result.Content.ExitCode, Is.EqualTo(0));
             Assert.That(runner.STDOutput, Is.Not.Empty);
-            Assert.Contains(DEFAULT_APPLICATION_EXPECTED_OUTPUT, runner.STDOutput);
+            Assert.Contains(DEFAULT_PROCESS_OUTPUT, runner.STDOutput);
         }
 
         [Test]
@@ -363,7 +318,7 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.That(result.Content.Status, Is.EqualTo(ProcessStatus.Success));
             Assert.That(result.Content.ExitCode, Is.EqualTo(0));
             Assert.That(runner.STDOutput, Is.Not.Empty);
-            Assert.Contains(DEFAULT_APPLICATION_EXPECTED_OUTPUT, runner.STDOutput);
+            Assert.Contains(DEFAULT_PROCESS_OUTPUT, runner.STDOutput);
         }
 
         [Test]
@@ -399,7 +354,7 @@ namespace NanoDNA.ProcessRunner.Tests
 
             Assert.That(result, Is.True);
             Assert.That(runner.STDOutput, Is.Not.Empty);
-            Assert.Contains(DEFAULT_APPLICATION_EXPECTED_OUTPUT, runner.STDOutput);
+            Assert.Contains(DEFAULT_PROCESS_OUTPUT, runner.STDOutput);
         }
 
         [Test]
@@ -433,7 +388,7 @@ namespace NanoDNA.ProcessRunner.Tests
 
             Assert.That(result, Is.True);
             Assert.That(runner.STDOutput, Is.Not.Empty);
-            Assert.Contains(DEFAULT_APPLICATION_EXPECTED_OUTPUT, runner.STDOutput);
+            Assert.Contains(DEFAULT_PROCESS_OUTPUT, runner.STDOutput);
         }
 
         [Test]

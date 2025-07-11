@@ -10,51 +10,8 @@ namespace NanoDNA.ProcessRunner.Tests
     /// <summary>
     /// Defines all Tests Needed for the <see cref="CommandRunner"/> Class
     /// </summary>
-    internal class CommandRunnerTests
+    internal class CommandRunnerTests : BaseUnitTest
     {
-        private const string DEFAULT_COMMAND = "echo Hello World";
-
-        private const string DEFAULT_COMMAND_OUTPUT = "Hello World";
-
-        /// <summary>
-        /// Gets the Default Application for the Current Operating System
-        /// </summary>
-        /// <returns>The Path to the Default OS Command Runner Application</returns>
-        /// <exception cref="PlatformNotSupportedException">Thrown if the Application is not supported by the Library</exception>
-        private string GetOSDefaultApplication()
-        {
-            if (OnAppropriateOS(PlatformOperatingSystem.Windows))
-                return "cmd.exe";
-            else if (OnAppropriateOS(PlatformOperatingSystem.Unix))
-                return "/bin/bash";
-            else if (OnAppropriateOS(PlatformOperatingSystem.OSX))
-                return "/bin/sh";
-            else
-                throw new PlatformNotSupportedException("Unsupported operating system.");
-        }
-
-        /// <summary>
-        /// Checks if the Current Operating System is the same as the one passed in
-        /// </summary>
-        /// <param name="OS">Operating System we are checking for</param>
-        /// <returns>True if the OS's Match, False otherwise</returns>
-        private bool OnAppropriateOS(PlatformOperatingSystem OS)
-        {
-            switch (OS)
-            {
-                case PlatformOperatingSystem.Windows:
-                    return OperatingSystem.IsWindows();
-
-                case PlatformOperatingSystem.Unix:
-                    return OperatingSystem.IsLinux();
-
-                case PlatformOperatingSystem.OSX:
-                    return OperatingSystem.IsMacOS();
-            }
-
-            return false;
-        }
-
         [Test]
         [TestCase(ProcessApplication.CMD, PlatformOperatingSystem.Windows)]
         [TestCase(ProcessApplication.Bash, PlatformOperatingSystem.Unix)]
@@ -168,14 +125,14 @@ namespace NanoDNA.ProcessRunner.Tests
 
             CommandRunner commandRunner = new CommandRunner();
 
-            Result<ProcessResult> result = commandRunner.Run(DEFAULT_COMMAND);
+            Result<ProcessResult> result = commandRunner.Run(DEFAULT_PROCESS_COMMAND);
 
             Assert.That(result, Is.Not.Null, "Command Run Result should not be null");
             Assert.That(result.Content, Is.Not.Null, "Command Result Content should not be null");
             Assert.That(result.Content.Status, Is.EqualTo(ProcessStatus.Success), $"Command Result Status should be {ProcessStatus.Success}");
             Assert.That(commandRunner.STDOutput.Length, Is.GreaterThan(0), "STDOutput should not be empty");
             Assert.That(commandRunner.STDError.Length, Is.EqualTo(0), "STDError should be empty");
-            Assert.That(commandRunner.STDOutput[0], Is.EqualTo(DEFAULT_COMMAND_OUTPUT), $"STDOutput does not match expected output : {DEFAULT_COMMAND_OUTPUT}");
+            Assert.That(commandRunner.STDOutput[0], Is.EqualTo(DEFAULT_PROCESS_OUTPUT), $"STDOutput does not match expected output : {DEFAULT_PROCESS_OUTPUT}");
         }
 
 
