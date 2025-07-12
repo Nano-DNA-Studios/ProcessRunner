@@ -16,12 +16,13 @@
 	<ItemGroup Condition="'$(Configuration)' == 'Release'">
 		<None Include="..\README.md" Pack="true" PackagePath="" />
 	</ItemGroup>
-
+ 
 	<!-- Include Items to Edit -->
 	<ItemGroup>
 		<!-- Project Documents -->
 		<None Include="..\README.md" Link="Docs\README.md" />
 		<None Include="..\Directory.Build.props" Link="Docs\Directory.Build.props" />
+		<None Include="..\Directory.Package.props" Link="Docs\Directory.Package.props" />
 		<None Include="..\LICENSE" Link="Docs\LICENSE" />
 
 		<!-- Workflow Scripts -->
