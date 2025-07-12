@@ -22,6 +22,7 @@
 		<!-- Project Documents -->
 		<None Include="..\README.md" Link="Docs\README.md" />
 		<None Include="..\Directory.Build.props" Link="Docs\Directory.Build.props" />
+		<None Include="..\Directory.Packages.props" Link="Docs\Directory.Packages.props" />
 		<None Include="..\LICENSE" Link="Docs\LICENSE" />
 
 		<!-- Workflow Scripts -->
@@ -32,12 +33,12 @@
 
 	<!-- NuGet Package References -->
 	<ItemGroup>
-		<PackageReference Include="NLog" Version="6.0.0" />
+		<PackageReference Include="NLog" />
 	</ItemGroup>
 	<ItemGroup>
-	  <None Update="NLog.config">
-	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	  </None>
+		<None Update="NLog.config">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
 	</ItemGroup>
 
 </Project>
