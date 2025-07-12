@@ -1,4 +1,5 @@
 ﻿using NanoDNA.ProcessRunner.Enums;
+using NLog;
 using System;
 
 namespace NanoDNA.ProcessRunner
@@ -9,6 +10,11 @@ namespace NanoDNA.ProcessRunner
     public class ProcessRunner : BaseProcessRunner
     {
         /// <summary>
+        /// Instance of the Class Logger for the class.
+        /// </summary>
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
+        /// <summary>
         /// Initializes a new Instance of <see cref="CommandRunner"/> using the String Name of the <see cref="ProcessApplication"/>.
         /// </summary>
         /// <param name="applicationName">String Name of the Process Application Enum the Command will run through.</param>
@@ -18,6 +24,8 @@ namespace NanoDNA.ProcessRunner
         public ProcessRunner(string applicationName, string workingDirectory = "", bool stdOutRedirect = true, bool stdErrRedirect = true) : base(applicationName, workingDirectory, stdOutRedirect, stdErrRedirect)
         {
             ApplicationExists(applicationName);
+
+            Logger.Trace("Initialized Process Runner");
         }
 
         /// <summary>
@@ -29,10 +37,18 @@ namespace NanoDNA.ProcessRunner
         private void ApplicationExists(string applicationName)
         {
             if (string.IsNullOrWhiteSpace(applicationName))
+            {
+                Logger.Error("Application name cannot be null or empty");
                 throw new ArgumentException("Application name cannot be null or empty.", nameof(applicationName));
-
+            }
+            
             if (!IsApplicationAvailable(applicationName))
+            {
+                Logger.Error($"Application '{applicationName}' not found on the system.");
                 throw new NotSupportedException($"Application '{applicationName}' not found on the system.");
+            }
+
+            Logger.Debug($"Application '{applicationName}' exists on the system.");
         }
     }
 }

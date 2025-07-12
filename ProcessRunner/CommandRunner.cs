@@ -31,6 +31,8 @@ namespace NanoDNA.ProcessRunner
         public CommandRunner(ProcessApplication application, string workingDirectory = "", bool stdOutRedirect = true, bool stdErrRedirect = true) : base(GetApplicationPath(application), workingDirectory, stdOutRedirect, stdErrRedirect)
         {
             Application = application;
+
+            Logger.Trace("Initialized Command Runner with Process Application Enum");
         }
 
         /// <summary>
@@ -43,6 +45,8 @@ namespace NanoDNA.ProcessRunner
         public CommandRunner(string applicationName, string workingDirectory = "", bool stdOutRedirect = true, bool stdErrRedirect = true) : base(GetApplicationPath(applicationName), workingDirectory, stdOutRedirect, stdErrRedirect)
         {
             Application = GetApplicationFromNameOrPath(applicationName);
+
+            Logger.Trace("Initialized Command Runner with Application Name");
         }
 
         /// <summary>
@@ -54,6 +58,8 @@ namespace NanoDNA.ProcessRunner
         public CommandRunner(string workingDirectory = "", bool stdOutRedirect = true, bool stdErrRedirect = true) : base(GetApplicationPath(), workingDirectory, stdOutRedirect, stdErrRedirect)
         {
             Application = GetDefaultOSApplication();
+
+            Logger.Trace("Initialized Command Runner with Default OS Application");
         }
 
         /// <summary>
@@ -63,6 +69,8 @@ namespace NanoDNA.ProcessRunner
         public CommandRunner(ProcessStartInfo startInfo) : base(startInfo)
         {
             Application = GetApplicationFromNameOrPath(GetApplicationPath(startInfo.FileName));
+
+            Logger.Trace("Initialized Command Runner with Process Start Info");
         }
 
         /// <summary>
@@ -73,8 +81,15 @@ namespace NanoDNA.ProcessRunner
         /// <exception cref="ArgumentException">Thrown if the provided</exception>
         private static ProcessApplication GetApplicationFromNameOrPath(string applicationName)
         {
+            Logger.Trace("Getting Application from Name or Path");
+
             if (Enum.TryParse(applicationName, out ProcessApplication app))
+            {
+                Logger.Trace("Application Name parsed from Enum");
                 return app;
+            }
+
+            Logger.Trace("Getting Application from Path");
 
             switch (applicationName.ToLower())
             {
@@ -103,6 +118,8 @@ namespace NanoDNA.ProcessRunner
         /// </returns>
         public static ProcessApplication GetDefaultOSApplication()
         {
+            Logger.Trace("Getting Default OS Application");
+
             if (OperatingSystem.IsWindows())
                 return ProcessApplication.CMD;
             else if (OperatingSystem.IsLinux())
@@ -134,6 +151,8 @@ namespace NanoDNA.ProcessRunner
         /// <exception cref="NotSupportedException">Thrown if the devices Operating System is not supported</exception>
         private static string GetApplicationPath(ProcessApplication application)
         {
+            Logger.Trace("Getting Application Path");
+
             if (OperatingSystem.IsWindows())
             {
                 switch (application)
@@ -156,7 +175,6 @@ namespace NanoDNA.ProcessRunner
             }
 
             Logger.Error($"CLI Application not Supported : {application}");
-
             throw new NotSupportedException($"Command Line Application is not Supported : {application}");
         }
 
@@ -168,6 +186,8 @@ namespace NanoDNA.ProcessRunner
         /// <returns>Argument to run the Command through it's respective <see cref="ProcessApplication"/></returns>
         private string GetApplicationArguments(ProcessApplication application, string command)
         {
+            Logger.Trace("Getting Application Arguments");
+
             switch (application)
             {
                 case ProcessApplication.CMD:

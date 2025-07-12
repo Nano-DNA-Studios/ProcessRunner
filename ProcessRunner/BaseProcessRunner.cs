@@ -88,7 +88,7 @@ namespace NanoDNA.ProcessRunner
                 CreateNoWindow = true
             };
 
-            Logger.Trace("Initialized with default settings.");
+            Logger.Trace("Initialized Base Process Runner with default settings");
         }
 
         /// <summary>
@@ -155,6 +155,8 @@ namespace NanoDNA.ProcessRunner
         protected BaseProcessRunner(ProcessStartInfo startInfo) : this()
         {
             Initialize(startInfo);
+
+            Logger.Trace("Base Process Runner initialized with Process Start Info");
         }
 
         /// <inheritdoc/>
@@ -199,8 +201,6 @@ namespace NanoDNA.ProcessRunner
             if (output == null)
                 return;
 
-            Logger.Info($"STDOutput : {output}");
-
             _stdOutput.Add(output);
         }
 
@@ -216,17 +216,14 @@ namespace NanoDNA.ProcessRunner
             if (output == null)
                 return;
 
-            Logger.Info($"STDError : {output}");
-
             _stdError.Add(output);
         }
 
         /// <inheritdoc/>
         public virtual Result<ProcessResult> Run(string args)
         {
-            StartInfo.Arguments = args;
-
             string command = $"{ApplicationName} {args}";
+            StartInfo.Arguments = args;
 
             Logger.Info($"Running Command : {command}");
 
@@ -243,7 +240,7 @@ namespace NanoDNA.ProcessRunner
                 process.OutputDataReceived += (sender, data) => SaveSTDOutput(sender, data);
                 process.ErrorDataReceived += (sender, data) => SaveSTDError(sender, data);
 
-                
+
                 if (STDOutputRedirect)
                     process.BeginOutputReadLine();
 
@@ -265,14 +262,23 @@ namespace NanoDNA.ProcessRunner
         }
 
         /// <inheritdoc/>
-        public virtual async Task<Result<ProcessResult>> RunAsync(string args) => await Task.Run(() => this.Run(args));
+        public virtual async Task<Result<ProcessResult>> RunAsync(string args)
+        {
+            Logger.Trace("Running RunAsync");
+            return await Task.Run(() => this.Run(args));
+        }
 
         /// <inheritdoc/>
-        public virtual bool TryRun(string args) => this.Run(args).Content.Status == ProcessStatus.Success;
+        public virtual bool TryRun(string args)
+        {
+            Logger.Trace("Running TryRun");
+            return this.Run(args).Content.Status == ProcessStatus.Success;
+        }
 
         /// <inheritdoc/>
         public virtual async Task<bool> TryRunAsync(string args)
         {
+            Logger.Trace("Running TryRunAsync");
             Result<ProcessResult> result = await this.RunAsync(args);
             return result.Content.Status == ProcessStatus.Success;
         }
@@ -280,6 +286,8 @@ namespace NanoDNA.ProcessRunner
         /// <inheritdoc/>
         public bool IsApplicationAvailable(string applicationName)
         {
+            Logger.Trace("Verifying if Application is Available");
+
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
                 FileName = OperatingSystem.IsWindows() ? "where" : "which",
