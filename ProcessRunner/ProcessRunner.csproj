@@ -16,7 +16,7 @@
 	<ItemGroup Condition="'$(Configuration)' == 'Release'">
 		<None Include="..\README.md" Pack="true" PackagePath="" />
 	</ItemGroup>
- 
+
 	<!-- Include Items to Edit -->
 	<ItemGroup>
 		<!-- Project Documents -->
@@ -33,12 +33,12 @@
 
 	<!-- NuGet Package References -->
 	<ItemGroup>
-		<PackageReference Include="NLog" Version="6.0.0" />
+		<PackageReference Include="NLog" />
 	</ItemGroup>
 	<ItemGroup>
-	  <None Update="NLog.config">
-	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	  </None>
+		<None Update="NLog.config">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
 	</ItemGroup>
 
 </Project>
