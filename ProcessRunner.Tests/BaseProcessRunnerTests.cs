@@ -2,8 +2,7 @@
 using System.Diagnostics;
 using System;
 using System.IO;
-using NanoDNA.ProcessRunner.Results;
-using NanoDNA.ProcessRunner.Enums;
+using NanoDNA.AutomationResults;
 
 namespace NanoDNA.ProcessRunner.Tests
 {
@@ -323,10 +322,10 @@ namespace NanoDNA.ProcessRunner.Tests
         {
             TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION);
 
-            Result<ProcessResult> result = runner.Run(DEFAULT_APPLICATION_COMMAND);
+            Result<int> result = runner.Run(DEFAULT_APPLICATION_COMMAND);
 
-            Assert.That(result.Content.Status, Is.EqualTo(ProcessStatus.Success));
-            Assert.That(result.Content.ExitCode, Is.EqualTo(0));
+            Assert.That(result.Status, Is.EqualTo(ResultStatus.Success));
+            Assert.That(result.Data, Is.EqualTo(0));
             Assert.That(runner.STDOutput, Is.Not.Empty);
             Assert.Contains(DEFAULT_PROCESS_OUTPUT, runner.STDOutput);
         }
@@ -339,10 +338,10 @@ namespace NanoDNA.ProcessRunner.Tests
         {
             TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION, stdOut: false);
 
-            Result<ProcessResult> result = runner.Run(DEFAULT_APPLICATION_COMMAND);
+            Result<int> result = runner.Run(DEFAULT_APPLICATION_COMMAND);
 
-            Assert.That(result.Content.Status, Is.EqualTo(ProcessStatus.Success));
-            Assert.That(result.Content.ExitCode, Is.EqualTo(0));
+            Assert.That(result.Status, Is.EqualTo(ResultStatus.Success));
+            Assert.That(result.Data, Is.EqualTo(0));
             Assert.That(runner.STDOutput, Is.Empty);
         }
 
@@ -354,10 +353,10 @@ namespace NanoDNA.ProcessRunner.Tests
         {
             TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION);
 
-            Result<ProcessResult> result = runner.Run(DEFAULT_APPLICATION_FAIL_COMMAND);
+            Result<int> result = runner.Run(DEFAULT_APPLICATION_FAIL_COMMAND);
 
-            Assert.That(result.Content.Status, Is.EqualTo(ProcessStatus.Failed));
-            Assert.That(result.Content.ExitCode, Is.Not.EqualTo(0));
+            Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
+            Assert.That(result.Data, Is.Not.EqualTo(0));
             Assert.That(runner.STDError, Is.Not.Empty);
         }
 
@@ -369,10 +368,10 @@ namespace NanoDNA.ProcessRunner.Tests
         {
             TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION);
 
-            Result<ProcessResult> result = runner.RunAsync(DEFAULT_APPLICATION_COMMAND).Result;
+            Result<int> result = runner.RunAsync(DEFAULT_APPLICATION_COMMAND).Result;
 
-            Assert.That(result.Content.Status, Is.EqualTo(ProcessStatus.Success));
-            Assert.That(result.Content.ExitCode, Is.EqualTo(0));
+            Assert.That(result.Status, Is.EqualTo(ResultStatus.Success));
+            Assert.That(result.Data, Is.EqualTo(0));
             Assert.That(runner.STDOutput, Is.Not.Empty);
             Assert.Contains(DEFAULT_PROCESS_OUTPUT, runner.STDOutput);
         }
@@ -385,10 +384,10 @@ namespace NanoDNA.ProcessRunner.Tests
         {
             TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION, stdOut: false);
 
-            Result<ProcessResult> result = runner.RunAsync(DEFAULT_APPLICATION_COMMAND).Result;
+            Result<int> result = runner.RunAsync(DEFAULT_APPLICATION_COMMAND).Result;
 
-            Assert.That(result.Content.Status, Is.EqualTo(ProcessStatus.Success));
-            Assert.That(result.Content.ExitCode, Is.EqualTo(0));
+            Assert.That(result.Status, Is.EqualTo(ResultStatus.Success));
+            Assert.That(result.Data, Is.EqualTo(0));
             Assert.That(runner.STDOutput, Is.Empty);
         }
 
@@ -400,10 +399,10 @@ namespace NanoDNA.ProcessRunner.Tests
         {
             TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION);
 
-            Result<ProcessResult> result = runner.RunAsync(DEFAULT_APPLICATION_FAIL_COMMAND).Result;
+            Result<int> result = runner.RunAsync(DEFAULT_APPLICATION_FAIL_COMMAND).Result;
 
-            Assert.That(result.Content.Status, Is.EqualTo(ProcessStatus.Failed));
-            Assert.That(result.Content.ExitCode, Is.Not.EqualTo(0));
+            Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
+            Assert.That(result.Data, Is.Not.EqualTo(0));
             Assert.That(runner.STDError, Is.Not.Empty);
         }
 
