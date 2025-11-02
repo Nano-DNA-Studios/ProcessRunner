@@ -1,4 +1,4 @@
-﻿using NanoDNA.ProcessRunner.Enums;
+﻿/*using NanoDNA.ProcessRunner.Enums;
 
 namespace NanoDNA.ProcessRunner.Results
 {
@@ -29,3 +29,4 @@ namespace NanoDNA.ProcessRunner.Results
         }
     }
 }
+*/

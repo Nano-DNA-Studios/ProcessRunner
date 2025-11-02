@@ -1,7 +1,7 @@
-﻿using System.Diagnostics;
+﻿using NanoDNA.AutomationResults;
+using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
-using NanoDNA.ProcessRunner.Results;
 
 namespace NanoDNA.ProcessRunner
 {
@@ -58,15 +58,15 @@ namespace NanoDNA.ProcessRunner
         /// Runs a process using the provided arguments and the current <see cref="StartInfo"/> configuration.
         /// </summary>
         /// <param name="args">Arguments for the process</param>
-        /// <returns>A <see cref="ProcessResult"/> containing the exit code, execution status and an optional message describing the outcome</returns>
-        public Result<ProcessResult> Run(string args);
+        /// <returns>A <see cref="Result<int>"/> containing the exit code, execution status and an optional message describing the outcome</returns>
+        public Result<int> Run(string args);
 
         /// <summary>
         /// Runs the process asynchronously using the provided arguments.
         /// </summary>
         /// <param name="args">Arguments for the process</param>
-        /// <returns>An awaitable task with a result of <see cref="ProcessResult"/> containing the exit code, execution status and an optional message describing the outcome</returns>
-        public Task<Result<ProcessResult>> RunAsync(string args);
+        /// <returns>An awaitable task with a result of <see cref="Result"/> containing the exit code, execution status and an optional message describing the outcome</returns>
+        public Task<Result<int>> RunAsync(string args);
 
         /// <summary>
         /// Tries to run the process with the provided arguments and returns a boolean indicating success or failure.

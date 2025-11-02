@@ -1,4 +1,5 @@
-﻿using NanoDNA.ProcessRunner.Enums;
+﻿using NanoDNA.AutomationResults;
+using NanoDNA.ProcessRunner.Enums;
 using NanoDNA.ProcessRunner.Results;
 using NLog;
 using System;
@@ -220,7 +221,7 @@ namespace NanoDNA.ProcessRunner
         }
 
         /// <inheritdoc/>
-        public virtual Result<ProcessResult> Run(string args)
+        public virtual Result<int> Run(string args)
         {
             string command = $"{ApplicationName} {args}";
             StartInfo.Arguments = args;
@@ -232,7 +233,7 @@ namespace NanoDNA.ProcessRunner
                 if (process == null)
                 {
                     Logger.Error($"Process was Null : {command}");
-                    return new Result<ProcessResult>(new ProcessResult(ProcessStatus.Failed, FAILED_TO_RUN_EXIT_CODE), "Process is null");
+                    return new Result<int>(ResultStatus.Error, FAILED_TO_RUN_EXIT_CODE, "Process is null");
                 }
 
                 process.OutputDataReceived += STDOutputReceived;
@@ -252,17 +253,17 @@ namespace NanoDNA.ProcessRunner
                 if (process.ExitCode == 0)
                 {
                     Logger.Info($"Successfully Ran Command : {command}");
-                    return new Result<ProcessResult>(new ProcessResult(ProcessStatus.Success, process.ExitCode), $"Command executed successfully: {command}");
+                    return new Result<int>(ResultStatus.Success, process.ExitCode, $"Command executed successfully: {command}");
                 }
 
                 Logger.Error($"Command exited with code {process.ExitCode}: {command}");
 
-                return new Result<ProcessResult>(new ProcessResult(ProcessStatus.Failed, process.ExitCode), $"Command ran and failed : {command}");
+                return new Result<int>(ResultStatus.Error, process.ExitCode, $"Command ran and failed : {command}");
             }
         }
 
         /// <inheritdoc/>
-        public virtual async Task<Result<ProcessResult>> RunAsync(string args)
+        public virtual async Task<Result<int>> RunAsync(string args)
         {
             Logger.Trace("Running RunAsync");
             return await Task.Run(() => this.Run(args));
@@ -272,15 +273,15 @@ namespace NanoDNA.ProcessRunner
         public virtual bool TryRun(string args)
         {
             Logger.Trace("Running TryRun");
-            return this.Run(args).Content.Status == ProcessStatus.Success;
+            return this.Run(args).Status == ResultStatus.Success;
         }
 
         /// <inheritdoc/>
         public virtual async Task<bool> TryRunAsync(string args)
         {
             Logger.Trace("Running TryRunAsync");
-            Result<ProcessResult> result = await this.RunAsync(args);
-            return result.Content.Status == ProcessStatus.Success;
+            Result<int> result = await this.RunAsync(args);
+            return result.Status == ResultStatus.Success;
         }
 
         /// <inheritdoc/>

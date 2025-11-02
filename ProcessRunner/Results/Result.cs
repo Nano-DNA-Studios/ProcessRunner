@@ -1,4 +1,4 @@
-﻿namespace NanoDNA.ProcessRunner.Results
+﻿/*namespace NanoDNA.ProcessRunner.Results
 {
     /// <summary>
     /// Represents the result of an operation, provides a way to encapsulate the content and an optional message.
@@ -28,3 +28,4 @@
         }
     }
 }
+*/
