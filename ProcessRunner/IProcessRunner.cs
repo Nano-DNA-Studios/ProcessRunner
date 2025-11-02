@@ -58,7 +58,7 @@ namespace NanoDNA.ProcessRunner
         /// Runs a process using the provided arguments and the current <see cref="StartInfo"/> configuration.
         /// </summary>
         /// <param name="args">Arguments for the process</param>
-        /// <returns>A <see cref="Result<int>"/> containing the exit code, execution status and an optional message describing the outcome</returns>
+        /// <returns>A <see cref="Result"/> containing the exit code, execution status and an optional message describing the outcome</returns>
         public Result<int> Run(string args);
 
         /// <summary>
