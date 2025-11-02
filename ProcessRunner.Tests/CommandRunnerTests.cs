@@ -1,6 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestPlatform.PlatformAbstractions;
+using NanoDNA.AutomationResults;
 using NanoDNA.ProcessRunner.Enums;
-using NanoDNA.ProcessRunner.Results;
 using NUnit.Framework;
 using System;
 using System.Diagnostics;
@@ -152,11 +152,11 @@ namespace NanoDNA.ProcessRunner.Tests
 
             CommandRunner commandRunner = new CommandRunner();
 
-            Result<ProcessResult> result = commandRunner.Run(DEFAULT_PROCESS_COMMAND);
+            Result<int> result = commandRunner.Run(DEFAULT_PROCESS_COMMAND);
 
             Assert.That(result, Is.Not.Null, "Command Run Result should not be null");
-            Assert.That(result.Content, Is.Not.Null, "Command Result Content should not be null");
-            Assert.That(result.Content.Status, Is.EqualTo(ProcessStatus.Success), $"Command Result Status should be {ProcessStatus.Success}");
+            Assert.That(result.Data, Is.EqualTo(0), "Command Result Content should not be null");
+            Assert.That(result.Status, Is.EqualTo(ResultStatus.Success), $"Command Result Status should be {ResultStatus.Success}");
             Assert.That(commandRunner.STDOutput.Length, Is.GreaterThan(0), "STDOutput should not be empty");
             Assert.That(commandRunner.STDError.Length, Is.EqualTo(0), "STDError should be empty");
             Assert.That(commandRunner.STDOutput[0], Is.EqualTo(DEFAULT_PROCESS_OUTPUT), $"STDOutput does not match expected output : {DEFAULT_PROCESS_OUTPUT}");
