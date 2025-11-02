@@ -41,7 +41,7 @@ namespace NanoDNA.ProcessRunner
                 Logger.Error("Application name cannot be null or empty");
                 throw new ArgumentException("Application name cannot be null or empty.", nameof(applicationName));
             }
-            
+
             if (!IsApplicationAvailable(applicationName))
             {
                 Logger.Error($"Application '{applicationName}' not found on the system.");
