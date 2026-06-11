@@ -41,6 +41,8 @@ namespace NanoDNA.ProcessRunner.Tests
         {
             string application = GetOSDefaultApplication();
 
+            Assert.That(TestRunner.IsApplicationAvailable(application), Is.True);
+
             TestRunner runner = new TestRunner(application);
 
             Assert.That(runner.StartInfo.FileName, Is.EqualTo(application));
@@ -57,7 +59,6 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.That(runner.STDError, Is.Empty);
             Assert.That(runner.STDOutputRedirect, Is.True);
             Assert.That(runner.STDErrorRedirect, Is.True);
-            Assert.That(runner.IsApplicationAvailable(application), Is.True);
         }
 
         /// <summary>
@@ -68,6 +69,8 @@ namespace NanoDNA.ProcessRunner.Tests
         {
             string application = GetOSDefaultApplication();
             string workingDirectory = Directory.GetCurrentDirectory();
+
+            Assert.That(TestRunner.IsApplicationAvailable(application), Is.True);
 
             TestRunner runner = new TestRunner(application, workingDirectory);
 
@@ -85,7 +88,6 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.That(runner.STDError, Is.Empty);
             Assert.That(runner.STDOutputRedirect, Is.True);
             Assert.That(runner.STDErrorRedirect, Is.True);
-            Assert.That(runner.IsApplicationAvailable(application), Is.True);
         }
 
         /// <summary>
@@ -114,6 +116,8 @@ namespace NanoDNA.ProcessRunner.Tests
         {
             string application = GetOSDefaultApplication();
 
+            Assert.That(TestRunner.IsApplicationAvailable(application), Is.True);
+
             TestRunner runner = new TestRunner(application, stdOut: stdOut, stdErr: stdErr);
 
             Assert.That(runner.StartInfo.FileName, Is.EqualTo(application));
@@ -130,7 +134,6 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.That(runner.STDError, Is.Empty);
             Assert.That(runner.STDOutputRedirect, Is.EqualTo(stdOut));
             Assert.That(runner.STDErrorRedirect, Is.EqualTo(stdErr));
-            Assert.That(runner.IsApplicationAvailable(application), Is.True);
         }
 
         /// <summary>
@@ -176,6 +179,8 @@ namespace NanoDNA.ProcessRunner.Tests
                 CreateNoWindow = true
             };
 
+            Assert.That(TestRunner.IsApplicationAvailable(application), Is.True);
+
             TestRunner runner = new TestRunner(startInfo);
 
             Assert.That(runner.StartInfo.FileName, Is.EqualTo(application));
@@ -192,7 +197,6 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.That(runner.STDError, Is.Empty);
             Assert.That(runner.STDOutputRedirect, Is.False);
             Assert.That(runner.STDErrorRedirect, Is.False);
-            Assert.That(runner.IsApplicationAvailable(application), Is.True);
         }
 
         /// <summary>
@@ -498,8 +502,16 @@ namespace NanoDNA.ProcessRunner.Tests
         [Test]
         public void IsApplicationAvailableValid()
         {
-            TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION);
-            Assert.That(runner.IsApplicationAvailable(DEFAULT_VALID_APPLICATION), Is.True);
+            Assert.That(TestRunner.IsApplicationAvailable(DEFAULT_VALID_APPLICATION), Is.True);
+        }
+
+        /// <summary>
+        /// Tests the <see cref="BaseProcessRunner.IsApplicationAvailable(string)"/> method of <see cref="BaseProcessRunner"/> to check if it returns False for invalid applications.
+        /// </summary>
+        [Test]
+        public void IsApplicationAvailableInvalid()
+        {
+            Assert.That(TestRunner.IsApplicationAvailable(DEFAULT_NON_EXISTENT_APPLICATION), Is.False);
         }
     }
 }
