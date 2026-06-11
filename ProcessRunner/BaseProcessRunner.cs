@@ -283,7 +283,7 @@ namespace NanoDNA.ProcessRunner
         }
 
         /// <inheritdoc/>
-        public bool IsApplicationAvailable(string applicationName)
+        public static bool IsApplicationAvailable(string applicationName)
         {
             Logger.Trace("Verifying if Application is Available");
 
