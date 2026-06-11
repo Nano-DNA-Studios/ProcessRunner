@@ -1,8 +1,8 @@
-﻿using System;
+﻿using NLog;
+using System;
 using System.Diagnostics;
 using NanoDNA.AutomationResults;
 using NanoDNA.ProcessRunner.Enums;
-using NLog;
 
 namespace NanoDNA.ProcessRunner
 {

@@ -1,6 +1,6 @@
-﻿using NUnit.Framework;
+﻿using System;
+using NUnit.Framework;
 using Microsoft.VisualStudio.TestPlatform.PlatformAbstractions;
-using System;
 
 namespace NanoDNA.ProcessRunner.Tests
 {

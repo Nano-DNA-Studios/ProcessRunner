@@ -1,7 +1,7 @@
-﻿using NanoDNA.AutomationResults;
+﻿using System.IO;
 using System.Diagnostics;
-using System.IO;
 using System.Threading.Tasks;
+using NanoDNA.AutomationResults;
 
 namespace NanoDNA.ProcessRunner
 {

@@ -1,7 +1,7 @@
-﻿using NUnit.Framework;
-using System.Diagnostics;
-using System;
+﻿using System;
 using System.IO;
+using NUnit.Framework;
+using System.Diagnostics;
 using NanoDNA.AutomationResults;
 
 namespace NanoDNA.ProcessRunner.Tests

@@ -1,10 +1,10 @@
-﻿using NanoDNA.AutomationResults;
-using NLog;
+﻿using NLog;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
+using System.Diagnostics;
 using System.Threading.Tasks;
+using NanoDNA.AutomationResults;
+using System.Collections.Generic;
 
 namespace NanoDNA.ProcessRunner
 {

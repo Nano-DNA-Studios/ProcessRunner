@@ -1,9 +1,9 @@
-﻿using Microsoft.VisualStudio.TestPlatform.PlatformAbstractions;
+﻿using System;
+using NUnit.Framework;
+using System.Diagnostics;
 using NanoDNA.AutomationResults;
 using NanoDNA.ProcessRunner.Enums;
-using NUnit.Framework;
-using System;
-using System.Diagnostics;
+using Microsoft.VisualStudio.TestPlatform.PlatformAbstractions;
 
 namespace NanoDNA.ProcessRunner.Tests
 {
