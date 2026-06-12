@@ -1,6 +1,7 @@
 ﻿using NanoDNA.AutomationResults;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace NanoDNA.ProcessRunner
@@ -65,8 +66,9 @@ namespace NanoDNA.ProcessRunner
         /// Runs the process asynchronously using the provided arguments.
         /// </summary>
         /// <param name="args">Arguments for the process</param>
+        /// <param name="cancellationToken">Cancellation Token used to cancel to the process before completion</param>
         /// <returns>An awaitable task with a result of <see cref="Result"/> containing the exit code, execution status and an optional message describing the outcome</returns>
-        public Task<Result<int>> RunAsync(string args);
+        public Task<Result<int>> RunAsync(string args, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Tries to run the process with the provided arguments and returns a boolean indicating success or failure.
@@ -79,8 +81,9 @@ namespace NanoDNA.ProcessRunner
         /// Tries to run the process asynchronously with the provided arguments and returns a boolean indicating success or failure.
         /// </summary>
         /// <param name="args">Arguments for the process</param>
+        /// <param name="cancellationToken">Cancellation Token used to cancel to the process before completion</param>
         /// <returns>An awaitable task with a result of True if the process succeeded, False otherwise</returns>
-        public Task<bool> TryRunAsync(string args);
+        public Task<bool> TryRunAsync(string args, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Checks if the specified application is available on the system.
