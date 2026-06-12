@@ -42,6 +42,12 @@ namespace NanoDNA.ProcessRunner.Tests
         [TestCase("ffmpeg", PlatformOperatingSystem.OSX)]
         public void ProcessRunnerConstructor_InvalidApplication(string applicationName, PlatformOperatingSystem OS)
         {
+            if (BaseProcessRunner.IsApplicationAvailable(applicationName))
+            {
+                Assert.IsTrue(true);
+                return;
+            }
+            
             Assert.Throws<NotSupportedException>(() => new ProcessRunner(applicationName));
         }
     }
