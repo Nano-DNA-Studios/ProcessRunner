@@ -87,6 +87,6 @@ namespace NanoDNA.ProcessRunner
         /// </summary>
         /// <param name="applicationName">Name of the Application</param>
         /// <returns>True if the Application Exists on the Device</returns>
-        public bool IsApplicationAvailable(string applicationName);
+        public static abstract bool IsApplicationAvailable(string applicationName);
     }
 }

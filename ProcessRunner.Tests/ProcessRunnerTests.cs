@@ -32,5 +32,17 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.IsNotNull(processRunner);
             Assert.That(processRunner.ApplicationName, Is.EqualTo(applicationName));
         }
+
+        [Test]
+        [TestCase("makemkvcon", PlatformOperatingSystem.Windows)]
+        [TestCase("makemkvcon", PlatformOperatingSystem.Unix)]
+        [TestCase("makemkvcon", PlatformOperatingSystem.OSX)]
+        [TestCase("ffmpeg", PlatformOperatingSystem.Windows)]
+        [TestCase("ffmpeg", PlatformOperatingSystem.Unix)]
+        [TestCase("ffmpeg", PlatformOperatingSystem.OSX)]
+        public void ProcessRunnerConstructor_InvalidApplication(string applicationName, PlatformOperatingSystem OS)
+        {
+            Assert.Throws<NotSupportedException>(() => new ProcessRunner(applicationName));
+        }
     }
 }
