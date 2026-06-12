@@ -4,6 +4,8 @@ using NanoDNA.ProcessRunner.Enums;
 using NUnit.Framework;
 using System;
 using System.Diagnostics;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace NanoDNA.ProcessRunner.Tests
 {
@@ -160,6 +162,92 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.That(commandRunner.STDOutput.Length, Is.GreaterThan(0), "STDOutput should not be empty");
             Assert.That(commandRunner.STDError.Length, Is.EqualTo(0), "STDError should be empty");
             Assert.That(commandRunner.STDOutput[0], Is.EqualTo(DEFAULT_PROCESS_OUTPUT), $"STDOutput does not match expected output : {DEFAULT_PROCESS_OUTPUT}");
+        }
+
+        /// <summary>
+        /// Tests the <see cref="CommandRunner.RunAsync(string, CancellationToken)"/> method to ensure it runs a command asynchronously and returns the expected result.
+        /// </summary>
+        /// <param name="application">Process Application Enum Instance</param>
+        /// <param name="OS">Operating System to test on</param>
+        [Test]
+        [TestCase(ProcessApplication.CMD, PlatformOperatingSystem.Windows)]
+        [TestCase(ProcessApplication.Bash, PlatformOperatingSystem.Unix)]
+        [TestCase(ProcessApplication.Sh, PlatformOperatingSystem.Unix)]
+        [TestCase(ProcessApplication.PowerShell, PlatformOperatingSystem.Windows)]
+        public async Task CommandRunnerRunAsync(ProcessApplication application, PlatformOperatingSystem OS)
+        {
+            if (!OnAppropriateOS(OS))
+            {
+                Assert.Throws<NotSupportedException>(() => new CommandRunner(application));
+                return;
+            }
+
+            CommandRunner commandRunner = new CommandRunner(application);
+
+            Result<int> result = await commandRunner.RunAsync(DEFAULT_PROCESS_COMMAND);
+
+            Assert.That(result, Is.Not.Null, "Command RunAsync Result should not be null");
+            Assert.That(result.Data, Is.EqualTo(0), "Command RunAsync Result Data should be 0");
+            Assert.That(result.Status, Is.EqualTo(ResultStatus.Success), $"Command RunAsync Result Status should be {ResultStatus.Success}");
+            Assert.That(commandRunner.STDOutput.Length, Is.GreaterThan(0), "STDOutput should not be empty");
+            Assert.That(commandRunner.STDError.Length, Is.EqualTo(0), "STDError should be empty");
+            
+            string fullOutput = string.Join(" ", commandRunner.STDOutput);
+            Assert.That(fullOutput, Is.EqualTo(DEFAULT_PROCESS_OUTPUT));
+        }
+
+        /// <summary>
+        /// Tests the <see cref="CommandRunner.TryRun(string)"/> method to ensure it runs a command and returns True for a successful invocation.
+        /// </summary>
+        /// <param name="application">Process Application Enum Instance</param>
+        /// <param name="OS">Operating System to test on</param>
+        [Test]
+        [TestCase(ProcessApplication.CMD, PlatformOperatingSystem.Windows)]
+        [TestCase(ProcessApplication.Bash, PlatformOperatingSystem.Unix)]
+        [TestCase(ProcessApplication.Sh, PlatformOperatingSystem.Unix)]
+        [TestCase(ProcessApplication.PowerShell, PlatformOperatingSystem.Windows)]
+        public void CommandRunnerTryRun(ProcessApplication application, PlatformOperatingSystem OS)
+        {
+            if (!OnAppropriateOS(OS))
+            {
+                Assert.Throws<NotSupportedException>(() => new CommandRunner(application));
+                return;
+            }
+
+            CommandRunner commandRunner = new CommandRunner(application);
+
+            bool result = commandRunner.TryRun(DEFAULT_PROCESS_COMMAND);
+
+            Assert.That(result, Is.True, "TryRun should return true for successful execution");
+            Assert.That(commandRunner.STDOutput.Length, Is.GreaterThan(0), "STDOutput should not be empty");
+            Assert.That(commandRunner.STDError.Length, Is.EqualTo(0), "STDError should be empty");
+        }
+
+        /// <summary>
+        /// Tests the <see cref="CommandRunner.TryRunAsync(string, CancellationToken)"/> method to ensure it runs a command asynchronously and returns True for a successful invocation.
+        /// </summary>
+        /// <param name="application">Process Application Enum Instance</param>
+        /// <param name="OS">Operating System to test on</param>
+        [Test]
+        [TestCase(ProcessApplication.CMD, PlatformOperatingSystem.Windows)]
+        [TestCase(ProcessApplication.Bash, PlatformOperatingSystem.Unix)]
+        [TestCase(ProcessApplication.Sh, PlatformOperatingSystem.Unix)]
+        [TestCase(ProcessApplication.PowerShell, PlatformOperatingSystem.Windows)]
+        public async Task CommandRunnerTryRunAsync(ProcessApplication application, PlatformOperatingSystem OS)
+        {
+            if (!OnAppropriateOS(OS))
+            {
+                Assert.Throws<NotSupportedException>(() => new CommandRunner(application));
+                return;
+            }
+
+            CommandRunner commandRunner = new CommandRunner(application);
+
+            bool result = await commandRunner.TryRunAsync(DEFAULT_PROCESS_COMMAND);
+
+            Assert.That(result, Is.True, "TryRunAsync should return true for successful execution");
+            Assert.That(commandRunner.STDOutput.Length, Is.GreaterThan(0), "STDOutput should not be empty");
+            Assert.That(commandRunner.STDError.Length, Is.EqualTo(0), "STDError should be empty");
         }
     }
 }
