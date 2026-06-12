@@ -1,6 +1,6 @@
-﻿using Microsoft.VisualStudio.TestPlatform.PlatformAbstractions;
-using System;
+﻿using System;
 using System.IO;
+using Microsoft.VisualStudio.TestPlatform.PlatformAbstractions;
 
 namespace NanoDNA.ProcessRunner.Tests
 {

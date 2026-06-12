@@ -1,10 +1,10 @@
-﻿using NanoDNA.AutomationResults;
-using NUnit.Framework;
-using System;
-using System.Diagnostics;
+﻿using System;
 using System.IO;
+using NUnit.Framework;
 using System.Threading;
+using System.Diagnostics;
 using System.Threading.Tasks;
+using NanoDNA.AutomationResults;
 
 namespace NanoDNA.ProcessRunner.Tests
 {
