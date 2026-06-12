@@ -1,8 +1,10 @@
-﻿using NUnit.Framework;
-using System.Diagnostics;
+﻿using NanoDNA.AutomationResults;
+using NUnit.Framework;
 using System;
+using System.Diagnostics;
 using System.IO;
-using NanoDNA.AutomationResults;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace NanoDNA.ProcessRunner.Tests
 {
@@ -381,7 +383,7 @@ namespace NanoDNA.ProcessRunner.Tests
         }
 
         /// <summary>
-        /// Tests the <see cref="BaseProcessRunner.RunAsync(string)"/> method of <see cref="BaseProcessRunner"/> to run a command without redirecting output asynchronously.
+        /// Tests the <see cref="BaseProcessRunner.RunAsync(string, CancellationToken)"/> method of <see cref="BaseProcessRunner"/> to run a command without redirecting output asynchronously.
         /// </summary>
         [Test]
         public void RunAsyncNoRedirect()
@@ -396,7 +398,7 @@ namespace NanoDNA.ProcessRunner.Tests
         }
 
         /// <summary>
-        /// Tests the <see cref="BaseProcessRunner.RunAsync(string)"/> method of <see cref="BaseProcessRunner"/> to run a command that will fail asynchronously.
+        /// Tests the <see cref="BaseProcessRunner.RunAsync(string, CancellationToken)"/> method of <see cref="BaseProcessRunner"/> to run a command that will fail asynchronously.
         /// </summary>
         [Test]
         public void RunAsyncDefaultFail()
@@ -454,7 +456,7 @@ namespace NanoDNA.ProcessRunner.Tests
         }
 
         /// <summary>
-        /// Tests the <see cref="BaseProcessRunner.TryRunAsync(string)"/> method of <see cref="BaseProcessRunner"/> to run a default command asynchronously.
+        /// Tests the <see cref="BaseProcessRunner.TryRunAsync(string, CancellationToken)"/> method of <see cref="BaseProcessRunner"/> to run a default command asynchronously.
         /// </summary>
         [Test]
         public void TryRunAsyncDefault()
@@ -469,7 +471,7 @@ namespace NanoDNA.ProcessRunner.Tests
         }
 
         /// <summary>
-        /// Tests the <see cref="BaseProcessRunner.TryRunAsync(string)"/> method of <see cref="BaseProcessRunner"/> to run a command without redirecting output asynchronously.
+        /// Tests the <see cref="BaseProcessRunner.TryRunAsync(string, CancellationToken)"/> method of <see cref="BaseProcessRunner"/> to run a command without redirecting output asynchronously.
         /// </summary>
         [Test]
         public void TryRunAsyncNoRedirect()
@@ -483,7 +485,7 @@ namespace NanoDNA.ProcessRunner.Tests
         }
 
         /// <summary>
-        /// Tests the <see cref="BaseProcessRunner.TryRunAsync(string)"/> method of <see cref="BaseProcessRunner"/> to run a command that will fail asynchronously.
+        /// Tests the <see cref="BaseProcessRunner.TryRunAsync(string, CancellationToken)"/> method of <see cref="BaseProcessRunner"/> to run a command that will fail asynchronously.
         /// </summary>
         [Test]
         public void TryRunAsyncDefaultFail()
@@ -512,6 +514,136 @@ namespace NanoDNA.ProcessRunner.Tests
         public void IsApplicationAvailableInvalid()
         {
             Assert.That(TestRunner.IsApplicationAvailable(DEFAULT_NON_EXISTENT_APPLICATION), Is.False);
+        }
+
+        /// <summary>
+        /// Tests that <see cref="BaseProcessRunner.RunAsync(string, CancellationToken)"/> runs to completion successfully when cancellation is not requested.
+        /// </summary>
+        [Test]
+        public async Task RunAsyncWithoutCancellation()
+        {
+            TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION);
+            CancellationToken token = CancellationToken.None;
+
+            Result<int> result = await runner.RunAsync(DEFAULT_APPLICATION_COMMAND, token);
+
+            Assert.That(result.Status, Is.EqualTo(ResultStatus.Success));
+            Assert.That(result.Data, Is.EqualTo(0));
+        }
+
+        /// <summary>
+        /// Tests that <see cref="BaseProcessRunner.RunAsync(string, CancellationToken)"/> exits immediately when provided a pre-cancelled token.
+        /// </summary>
+        [Test]
+        public async Task RunAsyncPreCancelledToken()
+        {
+            TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION);
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            Result<int> result = await runner.RunAsync(DEFAULT_APPLICATION_COMMAND, cts.Token);
+
+            Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
+            Assert.That(result.Data, Is.EqualTo(-1));
+            Assert.That(result.Message, Does.Contain("canceled"));
+        }
+
+        /// <summary>
+        /// Tests that <see cref="BaseProcessRunner.RunAsync(string, CancellationToken)"/> cancels a long-running process gracefully.
+        /// </summary>
+        [Test]
+        public async Task RunAsyncGracefulCancellation()
+        {
+            string longRunningArgs = OperatingSystem.IsWindows() ? "-n 10 127.0.0.1" : "10";
+            string longRunningApp = OperatingSystem.IsWindows() ? "ping" : "sleep";
+
+            TestRunner runner = new TestRunner(longRunningApp);
+            using CancellationTokenSource cts = new CancellationTokenSource();
+
+            Task<Result<int>> runTask = runner.RunAsync(longRunningArgs, cts.Token);
+            await Task.Delay(250);
+            cts.Cancel();
+
+            Result<int> result = await runTask;
+
+            Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
+            Assert.That(result.Data, Is.EqualTo(-1));
+            Assert.That(result.Message, Does.Contain("canceled"));
+        }
+
+        /// <summary>
+        /// Tests that <see cref="BaseProcessRunner.RunAsync(string, CancellationToken)"/> forcefully kills a process tree if it refuses to close gracefully within the timeout.
+        /// </summary>
+        [Test]
+        public async Task RunAsyncForcefulCancellationTimeout()
+        {
+            string app = OperatingSystem.IsWindows() ? "cmd.exe" : "bash";
+            string args = OperatingSystem.IsWindows()
+                ? "/c \"@echo off & choice /t 10 /d y > nul\""
+                : "-c \"trap '' SIGTERM; sleep 10\"";
+
+            TestRunner runner = new TestRunner(app);
+            using CancellationTokenSource cts = new CancellationTokenSource();
+
+            Task<Result<int>> runTask = runner.RunAsync(args, cts.Token);
+            await Task.Delay(250);
+            cts.Cancel();
+
+            Result<int> result = await runTask;
+
+            Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
+            Assert.That(result.Data, Is.EqualTo(-1));
+            Assert.That(result.Message, Does.Contain("killed forcefully"));
+        }
+
+        /// <summary>
+        /// Tests that <see cref="BaseProcessRunner.TryRunAsync(string, CancellationToken)"/> returns True when execution finishes cleanly without cancellation.
+        /// </summary>
+        [Test]
+        public async Task TryRunAsyncWithoutCancellation()
+        {
+            TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION);
+            CancellationToken token = CancellationToken.None;
+
+            bool success = await runner.TryRunAsync(DEFAULT_APPLICATION_COMMAND, token);
+
+            Assert.That(success, Is.True);
+        }
+
+        /// <summary>
+        /// Tests that <see cref="BaseProcessRunner.TryRunAsync(string, CancellationToken)"/> returns False immediately if the token is already canceled.
+        /// </summary>
+        [Test]
+        public async Task TryRunAsyncPreCancelledToken()
+        {
+            TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION);
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            bool success = await runner.TryRunAsync(DEFAULT_APPLICATION_COMMAND, cts.Token);
+
+            Assert.That(success, Is.False);
+        }
+
+        /// <summary>
+        /// Tests that <see cref="BaseProcessRunner.TryRunAsync(string, CancellationToken)"/> catches cancellation and returns False cleanly.
+        /// </summary>
+        [Test]
+        public async Task TryRunAsyncHandlesCancellation()
+        {
+            string longRunningArgs = OperatingSystem.IsWindows() ? "-n 10 127.0.0.1" : "10";
+            string longRunningApp = OperatingSystem.IsWindows() ? "ping" : "sleep";
+
+            TestRunner runner = new TestRunner(longRunningApp);
+            using CancellationTokenSource cts = new CancellationTokenSource();
+
+            Task<bool> runTask = runner.TryRunAsync(longRunningArgs, cts.Token);
+            await Task.Delay(250);
+            cts.Cancel();
+
+            bool success = await runTask;
+
+            Assert.That(success, Is.False);
         }
     }
 }
