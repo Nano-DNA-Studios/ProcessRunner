@@ -1,6 +1,7 @@
 ﻿using NLog;
 using System;
 using System.IO;
+using System.Threading;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using NanoDNA.AutomationResults;
@@ -239,7 +240,6 @@ namespace NanoDNA.ProcessRunner
                 process.OutputDataReceived += (sender, data) => SaveSTDOutput(sender, data);
                 process.ErrorDataReceived += (sender, data) => SaveSTDError(sender, data);
 
-
                 if (STDOutputRedirect)
                     process.BeginOutputReadLine();
 
@@ -261,10 +261,71 @@ namespace NanoDNA.ProcessRunner
         }
 
         /// <inheritdoc/>
-        public virtual async Task<Result<int>> RunAsync(string args)
+        public virtual async Task<Result<int>> RunAsync(string args, CancellationToken cancellationToken = default)
         {
             Logger.Trace("Running RunAsync");
-            return await Task.Run(() => this.Run(args));
+
+            string command = $"{ApplicationName} {args}";
+            StartInfo.Arguments = args;
+
+            Logger.Info($"Running Command : {command}");
+
+            using (Process? process = Process.Start(StartInfo))
+            {
+                if (process == null)
+                {
+                    Logger.Error($"Process was Null : {command}");
+                    return new Result<int>(ResultStatus.Error, FAILED_TO_RUN_EXIT_CODE, "Process is null");
+                }
+
+                process.OutputDataReceived += STDOutputReceived;
+                process.ErrorDataReceived += STDErrorReceived;
+                process.OutputDataReceived += (sender, data) => SaveSTDOutput(sender, data);
+                process.ErrorDataReceived += (sender, data) => SaveSTDError(sender, data);
+
+                if (STDOutputRedirect)
+                    process.BeginOutputReadLine();
+
+                if (STDErrorRedirect)
+                    process.BeginErrorReadLine();
+
+                Task processExitTask = process.WaitForExitAsync();
+                Task cancellationTask = Task.Delay(-1, cancellationToken);
+
+                Task completedTask = await Task.WhenAny(processExitTask, cancellationTask);
+
+                if (completedTask == cancellationTask)
+                {
+                    Logger.Warn($"Cancellation requested for command: {command}");
+
+                    if (process.HasExited)
+                        return new Result<int>(ResultStatus.Cancelled, FAILED_TO_RUN_EXIT_CODE, $"Command was canceled and has exited: {command}");
+
+                    process.CloseMainWindow();
+
+                    Task gracePeriodTask = Task.Delay(TimeSpan.FromSeconds(2));
+                    Task completedGraceTask = await Task.WhenAny(process.WaitForExitAsync(), gracePeriodTask);
+
+                    if (completedGraceTask == gracePeriodTask && !process.HasExited)
+                    {
+                        Logger.Warn($"Process did not exit gracefully. Force killing process tree: {command}");
+                        process.Kill(entireProcessTree: true);
+                        return new Result<int>(ResultStatus.Error, FAILED_TO_RUN_EXIT_CODE, $"Command was canceled and was killed forcefully: {command}");
+                    }
+
+                    return new Result<int>(ResultStatus.Cancelled, FAILED_TO_RUN_EXIT_CODE, $"Command was canceled and exited gracefully: {command}");
+                }
+
+                if (process.ExitCode == 0)
+                {
+                    Logger.Info($"Successfully Ran Command : {command}");
+                    return new Result<int>(ResultStatus.Success, process.ExitCode, $"Command executed successfully: {command}");
+                }
+
+                Logger.Error($"Command exited with code {process.ExitCode}: {command}");
+
+                return new Result<int>(ResultStatus.Error, process.ExitCode, $"Command ran and failed: {command}");
+            }
         }
 
         /// <inheritdoc/>
@@ -275,10 +336,10 @@ namespace NanoDNA.ProcessRunner
         }
 
         /// <inheritdoc/>
-        public virtual async Task<bool> TryRunAsync(string args)
+        public virtual async Task<bool> TryRunAsync(string args, CancellationToken cancellationToken = default)
         {
             Logger.Trace("Running TryRunAsync");
-            Result<int> result = await this.RunAsync(args);
+            Result<int> result = await this.RunAsync(args, cancellationToken);
             return result.Status == ResultStatus.Success;
         }
 

@@ -1,6 +1,8 @@
 ﻿using NLog;
 using System;
+using System.Threading;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using NanoDNA.AutomationResults;
 using NanoDNA.ProcessRunner.Enums;
 
@@ -208,6 +210,27 @@ namespace NanoDNA.ProcessRunner
         public override Result<int> Run(string args)
         {
             return base.Run(GetApplicationArguments(Application, args));
+        }
+
+        /// <inheritdoc/>
+        public override async Task<Result<int>> RunAsync(string args, CancellationToken cancellationToken = default)
+        {
+            return await base.RunAsync(GetApplicationArguments(Application, args), cancellationToken);
+        }
+
+        /// <inheritdoc/>
+        public override bool TryRun(string args)
+        {
+            Logger.Trace("Running TryRun");
+            return this.Run(args).Status == ResultStatus.Success;
+        }
+
+        /// <inheritdoc/>
+        public override async Task<bool> TryRunAsync(string args, CancellationToken cancellationToken = default)
+        {
+            Logger.Trace("Running TryRunAsync");
+            Result<int> result = await this.RunAsync(args, cancellationToken);
+            return result.Status == ResultStatus.Success;
         }
     }
 }
