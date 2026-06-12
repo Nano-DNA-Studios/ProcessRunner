@@ -1,12 +1,8 @@
 ﻿using System;
 using NUnit.Framework;
-<<<<<<< Cancellation-Tokens
 using System.Threading;
 using System.Diagnostics;
 using System.Threading.Tasks;
-=======
-using System.Diagnostics;
->>>>>>> main
 using NanoDNA.AutomationResults;
 using NanoDNA.ProcessRunner.Enums;
 using Microsoft.VisualStudio.TestPlatform.PlatformAbstractions;
