@@ -1,6 +1,6 @@
-﻿using NanoDNA.ProcessRunner.Enums;
-using NLog;
+﻿using NLog;
 using System;
+using NanoDNA.ProcessRunner.Enums;
 
 namespace NanoDNA.ProcessRunner
 {
@@ -41,7 +41,7 @@ namespace NanoDNA.ProcessRunner
                 Logger.Error("Application name cannot be null or empty");
                 throw new ArgumentException("Application name cannot be null or empty.", nameof(applicationName));
             }
-            
+
             if (!IsApplicationAvailable(applicationName))
             {
                 Logger.Error($"Application '{applicationName}' not found on the system.");

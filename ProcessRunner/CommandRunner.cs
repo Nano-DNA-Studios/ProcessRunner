@@ -1,8 +1,8 @@
-﻿using System;
+﻿using NLog;
+using System;
 using System.Diagnostics;
+using NanoDNA.AutomationResults;
 using NanoDNA.ProcessRunner.Enums;
-using NanoDNA.ProcessRunner.Results;
-using NLog;
 
 namespace NanoDNA.ProcessRunner
 {
@@ -205,7 +205,7 @@ namespace NanoDNA.ProcessRunner
         }
 
         /// <inheritdoc/>
-        public override Result<ProcessResult> Run(string args)
+        public override Result<int> Run(string args)
         {
             return base.Run(GetApplicationArguments(Application, args));
         }

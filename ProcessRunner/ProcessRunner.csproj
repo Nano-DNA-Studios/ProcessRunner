@@ -1,5 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+	<!-- Project Reference Conditionals -->
+	<PropertyGroup>
+		<UseProjectReference Condition="'$(Configuration)' == 'Debug' and '$(RepositoryName)' == 'GitHubAPICLI-Solution'">true</UseProjectReference>
+		<UseProjectReference Condition="'$(Configuration)' == 'Release' or '$(RepositoryName)' == ''">false</UseProjectReference>
+	</PropertyGroup>
+
 	<!-- Building / Publishing Metadata -->
 	<PropertyGroup>
 		<RootNamespace>NanoDNA.ProcessRunner</RootNamespace>
@@ -15,6 +21,11 @@
 	<!-- Add Individual Platforms in NuGet Package -->
 	<ItemGroup Condition="'$(Configuration)' == 'Release'">
 		<None Include="..\README.md" Pack="true" PackagePath="" />
+	</ItemGroup>
+
+	<!-- Development Project References -->
+	<ItemGroup Condition="'$(UseProjectReference)' == 'true'">
+		<ProjectReference Include="..\..\AutomationResults\AutomationResults\AutomationResults.csproj" />
 	</ItemGroup>
 
 	<!-- Include Items to Edit -->
@@ -33,6 +44,7 @@
 
 	<!-- NuGet Package References -->
 	<ItemGroup>
+		<PackageReference Include="NanoDNA.AutomationResults" Condition="'$(Configuration)' == 'Release'" />
 		<PackageReference Include="NLog" />
 	</ItemGroup>
 	<ItemGroup>
