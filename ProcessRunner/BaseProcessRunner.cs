@@ -299,7 +299,7 @@ namespace NanoDNA.ProcessRunner
                     Logger.Warn($"Cancellation requested for command: {command}");
 
                     if (process.HasExited)
-                        return new Result<int>(ResultStatus.Error, FAILED_TO_RUN_EXIT_CODE, $"Command was canceled and has exited: {command}");
+                        return new Result<int>(ResultStatus.Cancelled, FAILED_TO_RUN_EXIT_CODE, $"Command was canceled and has exited: {command}");
 
                     process.CloseMainWindow();
 
@@ -313,7 +313,7 @@ namespace NanoDNA.ProcessRunner
                         return new Result<int>(ResultStatus.Error, FAILED_TO_RUN_EXIT_CODE, $"Command was canceled and was killed forcefully: {command}");
                     }
 
-                    return new Result<int>(ResultStatus.Error, FAILED_TO_RUN_EXIT_CODE, $"Command was canceled and exited gracefully: {command}");
+                    return new Result<int>(ResultStatus.Cancelled, FAILED_TO_RUN_EXIT_CODE, $"Command was canceled and exited gracefully: {command}");
                 }
 
                 if (process.ExitCode == 0)

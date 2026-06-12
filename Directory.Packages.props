@@ -5,7 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- Common Dependencies -->
-    <PackageVersion Include="NanoDNA.AutomationResults" Version="0.0.1" />
+    <PackageVersion Include="NanoDNA.AutomationResults" Version="0.0.2" />
     <PackageVersion Include="NLog" Version="6.0.0" />
     <!-- Test Project Dependencies -->
     <PackageVersion Include="coverlet.collector" Version="6.0.0" />
