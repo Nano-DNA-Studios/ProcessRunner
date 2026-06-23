@@ -5,6 +5,7 @@ using System.Threading;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using NanoDNA.AutomationResults;
+using System.Collections.Generic;
 
 namespace NanoDNA.ProcessRunner.Tests
 {
@@ -367,7 +368,7 @@ namespace NanoDNA.ProcessRunner.Tests
         }
 
         /// <summary>
-        /// Tests the <see cref="BaseProcessRunner.RunAsync(string)"/> method of <see cref="BaseProcessRunner"/> to run a default command asynchronously.
+        /// Tests the <see cref="BaseProcessRunner.RunAsync(string, CancellationToken)"/> method of <see cref="BaseProcessRunner"/> to run a default command asynchronously.
         /// </summary>
         [Test]
         public void RunAsyncDefault()
@@ -644,6 +645,90 @@ namespace NanoDNA.ProcessRunner.Tests
             bool success = await runTask;
 
             Assert.That(success, Is.False);
+        }
+
+        /// <summary>
+        /// Tests that <see cref="BaseProcessRunner.StandardOutputStream"/> and <see cref="BaseProcessRunner.StandardErrorStream"/>
+        /// correctly expose the underlying stream readers.
+        /// </summary>
+        [Test]
+        public void StandardStreamsAreExposedCorrectly()
+        {
+            TestRunner runner = new TestRunner(GetOSDefaultApplication());
+
+            Assert.That(runner.StandardOutputStream, Is.Not.Null);
+            Assert.That(runner.StandardErrorStream, Is.Not.Null);
+            Assert.That(runner.StandardOutputStream, Is.InstanceOf<StreamReader>());
+            Assert.That(runner.StandardErrorStream, Is.InstanceOf<StreamReader>());
+        }
+
+        /// <summary>
+        /// Tests that <see cref="BaseProcessRunner.STDOutput"/> cleanly extracts and parses lines written to the stream.
+        /// </summary>
+        [Test]
+        public void STDOutputExtractsLinesFromMemoryStreamSafely()
+        {
+            TestRunner runner = new TestRunner(GetOSDefaultApplication());
+
+            byte[] bytes = System.Text.Encoding.UTF8.GetBytes($"First line{Environment.NewLine}Second line{Environment.NewLine}");
+
+            // Write directly to the underlying memory stream layout
+            runner.StandardOutputStream.BaseStream.Write(bytes, 0, bytes.Length);
+
+            string[] extractedLines = runner.STDOutput;
+
+            Assert.That(extractedLines, Is.Not.Null);
+            Assert.That(extractedLines.Length, Is.EqualTo(2));
+            Assert.That(extractedLines, Contains.Item("First line"));
+            Assert.That(extractedLines, Contains.Item("Second line"));
+        }
+
+        /// <summary>
+        /// Tests that <see cref="BaseProcessRunner.STDError"/> cleanly extracts and parses lines written to the error stream.
+        /// </summary>
+        [Test]
+        public void STDErrExtractsLinesFromMemoryStreamSafely()
+        {
+            TestRunner runner = new TestRunner(GetOSDefaultApplication());
+
+            byte[] bytes = System.Text.Encoding.UTF8.GetBytes($"Error log 1{Environment.NewLine}Error log 2{Environment.NewLine}");
+
+            // Write directly to the underlying memory stream layout
+            runner.StandardErrorStream.BaseStream.Write(bytes, 0, bytes.Length);
+
+            string[] extractedLines = runner.STDError;
+
+            Assert.That(extractedLines, Is.Not.Null);
+            Assert.That(extractedLines.Length, Is.EqualTo(2));
+            Assert.That(extractedLines, Contains.Item("Error log 1"));
+            Assert.That(extractedLines, Contains.Item("Error log 2"));
+        }
+
+        /// <summary>
+        /// Verifies that thread-safe reading from the stream handles concurrent access gracefully.
+        /// </summary>
+        [Test]
+        public void GetLinesFromStreamHandlesConcurrentReads()
+        {
+            TestRunner runner = new TestRunner(GetOSDefaultApplication());
+            byte[] bytes = System.Text.Encoding.UTF8.GetBytes($"Line 1{Environment.NewLine}Line 2{Environment.NewLine}");
+
+            runner.StandardOutputStream.BaseStream.Write(bytes, 0, bytes.Length);
+
+            List<Task<string[]>> readTasks = new List<Task<string[]>>();
+
+            for (int i = 0; i < 10; i++)
+            {
+                readTasks.Add(Task.Run(() => runner.STDOutput));
+            }
+
+            Task.WaitAll(readTasks.ToArray());
+
+            foreach (Task<string[]> task in readTasks)
+            {
+                Assert.That(task.Result.Length, Is.EqualTo(2));
+                Assert.That(task.Result, Contains.Item("Line 1"));
+            }
         }
     }
 }
