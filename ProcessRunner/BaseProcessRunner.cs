@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using NanoDNA.AutomationResults;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace NanoDNA.ProcessRunner
 {
@@ -289,19 +290,16 @@ namespace NanoDNA.ProcessRunner
                 if (STDErrorRedirect)
                     process.BeginErrorReadLine();
 
-                Task processExitTask = process.WaitForExitAsync();
-                Task cancellationTask = Task.Delay(-1, cancellationToken);
-
-                Task completedTask = await Task.WhenAny(processExitTask, cancellationTask);
-
-                if (completedTask == cancellationTask)
+                try
+                {
+                    await process.WaitForExitAsync(cancellationToken);
+                }
+                catch
                 {
                     Logger.Warn($"Cancellation requested for command: {command}");
 
                     if (process.HasExited)
                         return new Result<int>(ResultStatus.Cancelled, FAILED_TO_RUN_EXIT_CODE, $"Command was canceled and has exited: {command}");
-
-                    process.CloseMainWindow();
 
                     Task gracePeriodTask = Task.Delay(TimeSpan.FromSeconds(5));
                     Task completedGraceTask = await Task.WhenAny(process.WaitForExitAsync(), gracePeriodTask);
