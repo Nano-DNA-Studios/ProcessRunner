@@ -37,14 +37,14 @@ namespace NanoDNA.ProcessRunner
         public string[] STDError { get; }
 
         /// <summary>
-        /// Gets the Standard Output MemoryStream from the executed process.
+        /// Gets a StreamReader to read the standard output messages from the executed process.
         /// </summary>
-        public MemoryStream StandardOutputStream { get; }
+        public StreamReader StandardOutputStream { get; }
 
         /// <summary>
-        /// Gets the Standard Error MemoryStream from the executed process.
+        /// Gets a StreamReader to read the standard error messages from the executed process.
         /// </summary>
-        public MemoryStream StandardErrorStream { get; }
+        public StreamReader StandardErrorStream { get; }
 
         /// <summary>
         /// Sets whether the standard output should be redirected to the console.

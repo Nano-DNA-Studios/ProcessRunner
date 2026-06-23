@@ -61,11 +61,11 @@ namespace NanoDNA.ProcessRunner
         public bool STDErrorRedirect => StartInfo.RedirectStandardError;
 
         /// <inheritdoc />
-        public MemoryStream StandardOutputStream => _stdOutput;
+        public StreamReader StandardOutputStream { get; private set; }
 
         /// <inheritdoc />
-        public MemoryStream StandardErrorStream => _stdError;
-        
+        public StreamReader StandardErrorStream { get; private set; }
+
         /// <summary>
         /// Stores the standard output messages from the executed process.
         /// </summary>
@@ -96,6 +96,9 @@ namespace NanoDNA.ProcessRunner
 
             _stdOutput = new MemoryStream();
             _stdError = new MemoryStream();
+
+            StandardOutputStream = new StreamReader(_stdOutput, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, bufferSize: 1024, leaveOpen: true);
+            StandardErrorStream = new StreamReader(_stdError, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, bufferSize: 1024, leaveOpen: true);
 
             StartInfo = new ProcessStartInfo
             {
