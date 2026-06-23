@@ -1,6 +1,7 @@
 ﻿using NLog;
 using System;
 using System.IO;
+using System.Text;
 using System.Threading;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -20,6 +21,16 @@ namespace NanoDNA.ProcessRunner
         private const int FAILED_TO_RUN_EXIT_CODE = -1;
 
         /// <summary>
+        /// Synchronization object used to serialize access to the standard output memory stream.
+        /// </summary>
+        private readonly object _outputLock = new object();
+
+        /// <summary>
+        /// Synchronization object used to serialize access to the standard error memory stream.
+        /// </summary>
+        private readonly object _errorLock = new object();
+
+        /// <summary>
         /// Instance of the Class Logger for the class.
         /// </summary>
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
@@ -34,10 +45,10 @@ namespace NanoDNA.ProcessRunner
         public string WorkingDirectory => StartInfo.WorkingDirectory;
 
         /// <inheritdoc />
-        public string[] STDOutput => _stdOutput.ToArray();
+        public string[] STDOutput => GetLinesFromStream(_stdOutput, _outputLock);
 
         /// <inheritdoc />
-        public string[] STDError => _stdError.ToArray();
+        public string[] STDError => GetLinesFromStream(_stdError, _errorLock);
 
         /// <summary>
         /// Gets whether <see cref="STDOutput"/> is redirected to the console.
@@ -49,15 +60,21 @@ namespace NanoDNA.ProcessRunner
         /// </summary>
         public bool STDErrorRedirect => StartInfo.RedirectStandardError;
 
+        /// <inheritdoc />
+        public StreamReader StandardOutputStream { get; private set; }
+
+        /// <inheritdoc />
+        public StreamReader StandardErrorStream { get; private set; }
+
         /// <summary>
         /// Stores the standard output messages from the executed process.
         /// </summary>
-        protected List<string> _stdOutput { get; set; }
+        protected MemoryStream _stdOutput { get; set; }
 
         /// <summary>
         /// Stores the standard error messages from the executed process.
         /// </summary>
-        protected List<string> _stdError { get; set; }
+        protected MemoryStream _stdError { get; set; }
 
         /// <summary>
         /// Occurs when the standard output of the process receives data.
@@ -77,8 +94,11 @@ namespace NanoDNA.ProcessRunner
             STDOutputReceived = null;
             STDErrorReceived = null;
 
-            _stdOutput = new List<string>();
-            _stdError = new List<string>();
+            _stdOutput = new MemoryStream();
+            _stdError = new MemoryStream();
+
+            StandardOutputStream = new StreamReader(_stdOutput, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, bufferSize: 1024, leaveOpen: true);
+            StandardErrorStream = new StreamReader(_stdError, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, bufferSize: 1024, leaveOpen: true);
 
             StartInfo = new ProcessStartInfo
             {
@@ -197,11 +217,14 @@ namespace NanoDNA.ProcessRunner
         protected void SaveSTDOutput(object sender, DataReceivedEventArgs data)
         {
             string? output = data.Data;
-
             if (output == null)
                 return;
 
-            _stdOutput.Add(output);
+            lock (_outputLock)
+            {
+                byte[] bytes = Encoding.UTF8.GetBytes(output + Environment.NewLine);
+                _stdOutput.Write(bytes, 0, bytes.Length);
+            }
         }
 
         /// <summary>
@@ -212,11 +235,14 @@ namespace NanoDNA.ProcessRunner
         protected void SaveSTDError(object sender, DataReceivedEventArgs data)
         {
             string? output = data.Data;
-
             if (output == null)
                 return;
 
-            _stdError.Add(output);
+            lock (_errorLock)
+            {
+                byte[] bytes = Encoding.UTF8.GetBytes(output + Environment.NewLine);
+                _stdError.Write(bytes, 0, bytes.Length);
+            }
         }
 
         /// <inheritdoc/>
@@ -289,21 +315,18 @@ namespace NanoDNA.ProcessRunner
                 if (STDErrorRedirect)
                     process.BeginErrorReadLine();
 
-                Task processExitTask = process.WaitForExitAsync();
-                Task cancellationTask = Task.Delay(-1, cancellationToken);
-
-                Task completedTask = await Task.WhenAny(processExitTask, cancellationTask);
-
-                if (completedTask == cancellationTask)
+                try
+                {
+                    await process.WaitForExitAsync(cancellationToken);
+                }
+                catch
                 {
                     Logger.Warn($"Cancellation requested for command: {command}");
 
                     if (process.HasExited)
                         return new Result<int>(ResultStatus.Cancelled, FAILED_TO_RUN_EXIT_CODE, $"Command was canceled and has exited: {command}");
 
-                    process.CloseMainWindow();
-
-                    Task gracePeriodTask = Task.Delay(TimeSpan.FromSeconds(2));
+                    Task gracePeriodTask = Task.Delay(TimeSpan.FromSeconds(5));
                     Task completedGraceTask = await Task.WhenAny(process.WaitForExitAsync(), gracePeriodTask);
 
                     if (completedGraceTask == gracePeriodTask && !process.HasExited)
@@ -341,6 +364,36 @@ namespace NanoDNA.ProcessRunner
             Logger.Trace("Running TryRunAsync");
             Result<int> result = await this.RunAsync(args, cancellationToken);
             return result.Status == ResultStatus.Success;
+        }
+
+        /// <summary>
+        /// Extracts individual text lines from a given memory stream in a thread-safe manner.
+        /// </summary>
+        /// <param name="stream">The source memory stream to read from.</param>
+        /// <param name="lockObject">The synchronization object used to secure access to the stream.</param>
+        /// <returns>An array of strings representing the lines extracted from the stream.</returns>
+        private string[] GetLinesFromStream(MemoryStream stream, object lockObject)
+        {
+            lock (lockObject)
+            {
+                if (stream.Length == 0) return Array.Empty<string>();
+
+                long originalPosition = stream.Position;
+                stream.Position = 0;
+
+                var lines = new List<string>();
+                using (var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, bufferSize: 1024, leaveOpen: true))
+                {
+                    while (!reader.EndOfStream)
+                    {
+                        string? line = reader.ReadLine();
+                        if (line != null) lines.Add(line);
+                    }
+                }
+
+                stream.Position = originalPosition;
+                return lines.ToArray();
+            }
         }
 
         /// <inheritdoc/>

@@ -2,8 +2,10 @@
 
 	<!-- Project Reference Conditionals -->
 	<PropertyGroup>
-		<UseProjectReference Condition="'$(Configuration)' == 'Debug' and '$(RepositoryName)' == 'GitHubAPICLI-Solution'">true</UseProjectReference>
-		<UseProjectReference Condition="'$(Configuration)' == 'Release' or '$(RepositoryName)' == ''">false</UseProjectReference>
+		<AutomationResultsProjectExists Condition="Exists('$(MSBuildThisFileDirectory)..\..\AutomationResults\AutomationResults\AutomationResults.csproj')">true</AutomationResultsProjectExists>
+		<AutomationResultsProjectExists Condition="'$(AutomationResultsProjectExists)' == ''">false</AutomationResultsProjectExists>
+		<UseProjectReference Condition="'$(Configuration)' == 'Debug' and '$(AutomationResultsProjectExists)' == 'true'">true</UseProjectReference>
+		<UseProjectReference Condition="'$(Configuration)' == 'Release'">false</UseProjectReference>
 	</PropertyGroup>
 
 	<!-- Building / Publishing Metadata -->
@@ -44,7 +46,7 @@
 
 	<!-- NuGet Package References -->
 	<ItemGroup>
-		<PackageReference Include="NanoDNA.AutomationResults" Condition="'$(Configuration)' == 'Release'" />
+		<PackageReference Include="NanoDNA.AutomationResults" Condition="'$(UseProjectReference)' == 'false'" />
 		<PackageReference Include="NLog" />
 	</ItemGroup>
 	<ItemGroup>

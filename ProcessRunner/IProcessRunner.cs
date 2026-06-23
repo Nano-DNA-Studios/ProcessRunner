@@ -37,6 +37,16 @@ namespace NanoDNA.ProcessRunner
         public string[] STDError { get; }
 
         /// <summary>
+        /// Gets a StreamReader to read the standard output messages from the executed process.
+        /// </summary>
+        public StreamReader StandardOutputStream { get; }
+
+        /// <summary>
+        /// Gets a StreamReader to read the standard error messages from the executed process.
+        /// </summary>
+        public StreamReader StandardErrorStream { get; }
+
+        /// <summary>
         /// Sets whether the standard output should be redirected to the console.
         /// </summary>
         /// <param name="redirect">The state of the redirect</param>
