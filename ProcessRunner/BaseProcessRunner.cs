@@ -303,7 +303,7 @@ namespace NanoDNA.ProcessRunner
 
                     process.CloseMainWindow();
 
-                    Task gracePeriodTask = Task.Delay(TimeSpan.FromSeconds(2));
+                    Task gracePeriodTask = Task.Delay(TimeSpan.FromSeconds(5));
                     Task completedGraceTask = await Task.WhenAny(process.WaitForExitAsync(), gracePeriodTask);
 
                     if (completedGraceTask == gracePeriodTask && !process.HasExited)
