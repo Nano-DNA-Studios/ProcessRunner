@@ -46,7 +46,7 @@
 
 	<!-- NuGet Package References -->
 	<ItemGroup>
-		<PackageReference Include="NanoDNA.AutomationResults" Condition="'$(Configuration)' == 'Release'" />
+		<PackageReference Include="NanoDNA.AutomationResults" Condition="'$(UseProjectReference)' == 'false'" />
 		<PackageReference Include="NLog" />
 	</ItemGroup>
 	<ItemGroup>
