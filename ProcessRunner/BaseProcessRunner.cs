@@ -223,41 +223,41 @@ namespace NanoDNA.ProcessRunner
             Logger.Debug($"Working Directory : {path}");
         }
 
-        ///// <summary>
-        ///// Saves the standard output from the process internally.
-        ///// </summary>
-        ///// <param name="sender">Object sending the event</param>
-        ///// <param name="data">Data received by the event</param>
-        //protected void SaveSTDOutput(object sender, DataReceivedEventArgs data)
-        //{
-        //    string? output = data.Data;
-        //    if (output == null)
-        //        return;
+        /// <summary>
+        /// Saves the standard output from the process internally.
+        /// </summary>
+        /// <param name="sender">Object sending the event</param>
+        /// <param name="data">Data received by the event</param>
+        protected void SaveSTDOutput(object sender, DataReceivedEventArgs data)
+        {
+            string? output = data.Data;
+            if (output == null)
+                return;
 
-        //    lock (_outputLock)
-        //    {
-        //        byte[] bytes = Encoding.UTF8.GetBytes(output + Environment.NewLine);
-        //        _stdOutput.Write(bytes, 0, bytes.Length);
-        //    }
-        //}
+            lock (_outputLock)
+            {
+                byte[] bytes = Encoding.UTF8.GetBytes(output + Environment.NewLine);
+                _stdOutput.Write(bytes, 0, bytes.Length);
+            }
+        }
 
-        ///// <summary>
-        ///// Saves the standard error from the process internally.
-        ///// </summary>
-        ///// <param name="sender">Object sending the event</param>
-        ///// <param name="data">Data received by the event</param>
-        //protected void SaveSTDError(object sender, DataReceivedEventArgs data)
-        //{
-        //    string? output = data.Data;
-        //    if (output == null)
-        //        return;
+        /// <summary>
+        /// Saves the standard error from the process internally.
+        /// </summary>
+        /// <param name="sender">Object sending the event</param>
+        /// <param name="data">Data received by the event</param>
+        protected void SaveSTDError(object sender, DataReceivedEventArgs data)
+        {
+            string? output = data.Data;
+            if (output == null)
+                return;
 
-        //    lock (_errorLock)
-        //    {
-        //        byte[] bytes = Encoding.UTF8.GetBytes(output + Environment.NewLine);
-        //        _stdError.Write(bytes, 0, bytes.Length);
-        //    }
-        //}
+            lock (_errorLock)
+            {
+                byte[] bytes = Encoding.UTF8.GetBytes(output + Environment.NewLine);
+                _stdError.Write(bytes, 0, bytes.Length);
+            }
+        }
 
         /// <inheritdoc/>
         public virtual Result<int> Run(string args)
@@ -277,21 +277,21 @@ namespace NanoDNA.ProcessRunner
 
                 process.OutputDataReceived += STDOutputReceived;
                 process.ErrorDataReceived += STDErrorReceived;
-                //process.OutputDataReceived += (sender, data) => SaveSTDOutput(sender, data);
-                //process.ErrorDataReceived += (sender, data) => SaveSTDError(sender, data);
+                process.OutputDataReceived += (sender, data) => SaveSTDOutput(sender, data);
+                process.ErrorDataReceived += (sender, data) => SaveSTDError(sender, data);
 
-                //if (STDOutputRedirect)
-                //    process.BeginOutputReadLine();
+                if (STDOutputRedirect)
+                    process.BeginOutputReadLine();
 
-                //if (STDErrorRedirect)
-                //    process.BeginErrorReadLine();
+                if (STDErrorRedirect)
+                    process.BeginErrorReadLine();
 
-                Task outputCopyTask = STDOutputRedirect ? process.StandardOutput.BaseStream.CopyToAsync(_stdOutput) : Task.CompletedTask;
-                Task errorCopyTask = STDErrorRedirect ? process.StandardError.BaseStream.CopyToAsync(_stdError) : Task.CompletedTask;
+                //Task outputCopyTask = STDOutputRedirect ? process.StandardOutput.BaseStream.CopyToAsync(_stdOutput) : Task.CompletedTask;
+                //Task errorCopyTask = STDErrorRedirect ? process.StandardError.BaseStream.CopyToAsync(_stdError) : Task.CompletedTask;
 
                 process.WaitForExit();
 
-                Task.WaitAll(outputCopyTask, errorCopyTask);
+                //Task.WaitAll(outputCopyTask, errorCopyTask);
 
                 //if (STDOutputRedirect)
                 //    process.StandardOutput.BaseStream.CopyTo(_stdOutput);
@@ -331,17 +331,17 @@ namespace NanoDNA.ProcessRunner
 
                 process.OutputDataReceived += STDOutputReceived;
                 process.ErrorDataReceived += STDErrorReceived;
-                //process.OutputDataReceived += (sender, data) => SaveSTDOutput(sender, data);
-                //process.ErrorDataReceived += (sender, data) => SaveSTDError(sender, data);
+                process.OutputDataReceived += (sender, data) => SaveSTDOutput(sender, data);
+                process.ErrorDataReceived += (sender, data) => SaveSTDError(sender, data);
 
-                //if (STDOutputRedirect)
-                //    process.BeginOutputReadLine();
+                if (STDOutputRedirect)
+                    process.BeginOutputReadLine();
 
-                //if (STDErrorRedirect)
-                //    process.BeginErrorReadLine();
+                if (STDErrorRedirect)
+                    process.BeginErrorReadLine();
 
-                Task outputCopyTask = STDOutputRedirect ? process.StandardOutput.BaseStream.CopyToAsync(_stdOutput, cancellationToken) : Task.CompletedTask;
-                Task errorCopyTask = STDErrorRedirect ? process.StandardError.BaseStream.CopyToAsync(_stdError, cancellationToken) : Task.CompletedTask;
+                //Task outputCopyTask = STDOutputRedirect ? process.StandardOutput.BaseStream.CopyToAsync(_stdOutput, cancellationToken) : Task.CompletedTask;
+                //Task errorCopyTask = STDErrorRedirect ? process.StandardError.BaseStream.CopyToAsync(_stdError, cancellationToken) : Task.CompletedTask;
 
                 try
                 {
@@ -385,7 +385,7 @@ namespace NanoDNA.ProcessRunner
                     return new Result<int>(ResultStatus.Cancelled, FAILED_TO_RUN_EXIT_CODE, $"Command was canceled and exited gracefully: {command}");
                 }
 
-                await Task.WhenAll(outputCopyTask, errorCopyTask);
+                //await Task.WhenAll(outputCopyTask, errorCopyTask);
 
                 //if (STDOutputRedirect)
                 //    await process.StandardOutput.BaseStream.CopyToAsync(_stdOutput, cancellationToken);
