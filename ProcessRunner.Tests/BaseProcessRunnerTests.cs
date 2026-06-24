@@ -576,14 +576,49 @@ namespace NanoDNA.ProcessRunner.Tests
         }
 
         /// <summary>
+        /// Tests that <see cref="BaseProcessRunner.RunAsync(string, CancellationToken)"/> handles an exception during the graceful cancellation sequence by force-killing the process and returning an Error status.
+        /// </summary>
+        [Test]
+        public async Task RunAsyncCancellationErrorFallback()
+        {
+            string longRunningApp = OperatingSystem.IsWindows() ? "cmd.exe" : "sleep";
+            string longRunningArgs = OperatingSystem.IsWindows() ? "/k" : "10";
+
+            TestRunner runner = new TestRunner(longRunningApp);
+            using CancellationTokenSource cts = new CancellationTokenSource();
+
+            // Intentionally sabotage the environment properties to force killTask to crash
+            if (OperatingSystem.IsWindows())
+            {
+                runner.StartInfo.RedirectStandardInput = false;
+            }
+            else
+            {
+                runner.StartInfo.EnvironmentVariables["PATH"] = string.Empty;
+            }
+
+            Task<Result<int>> runTask = runner.RunAsync(longRunningArgs, cts.Token);
+            await Task.Delay(250);
+            cts.Cancel();
+
+            Result<int> result = await runTask;
+
+            Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
+            Assert.That(result.Data, Is.EqualTo(-1));
+            Assert.That(result.Message, Does.Contain("killed forcefully"));
+        }
+
+        /// <summary>
         /// Tests that <see cref="BaseProcessRunner.RunAsync(string, CancellationToken)"/> forcefully kills a process tree if it refuses to close gracefully within the timeout.
         /// </summary>
         [Test]
         public async Task RunAsyncForcefulCancellationTimeout()
         {
             //string longRunningArgs = OperatingSystem.IsWindows() ? "-n 10 127.0.0.1" : "10";
-            string longRunningApp = OperatingSystem.IsWindows() ? "ping" : "sleep";
-            string longRunningArgs = OperatingSystem.IsWindows() ? "-n 10 127.0.0.1" : "-c \"trap '' SIGTERM; sleep 10\"";
+            string longRunningApp = OperatingSystem.IsWindows() ? "ping" : "bash";
+            string longRunningArgs = OperatingSystem.IsWindows() 
+                ? "-n 10 127.0.0.1" 
+                : "-c \"trap '' SIGTERM; sleep 10\"";
 
             //string app = OperatingSystem.IsWindows() ? "cmd.exe" : "bash";
             //string args = OperatingSystem.IsWindows()
