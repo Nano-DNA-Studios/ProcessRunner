@@ -322,7 +322,7 @@ namespace NanoDNA.ProcessRunner.Tests
         }
 
         /// <summary>
-        /// Tests the <see cref="BaseProcessRunner.Run(string)"/> method of <see cref="BaseProcessRunner"/> to run a default command.
+        /// Tests the <see cref="BaseProcessRunner.Run(string, TimeSpan?)"/> method of <see cref="BaseProcessRunner"/> to run a default command.
         /// </summary>
         [Test]
         public void RunDefault()
@@ -338,7 +338,7 @@ namespace NanoDNA.ProcessRunner.Tests
         }
 
         /// <summary>
-        /// Tests the <see cref="BaseProcessRunner.Run(string)"/> method of <see cref="BaseProcessRunner"/> to run a command without redirecting output.
+        /// Tests the <see cref="BaseProcessRunner.Run(string, TimeSpan?)"/> method of <see cref="BaseProcessRunner"/> to run a command without redirecting output.
         /// </summary>
         [Test]
         public void RunNoRedirect()
@@ -353,7 +353,7 @@ namespace NanoDNA.ProcessRunner.Tests
         }
 
         /// <summary>
-        /// Tests the <see cref="BaseProcessRunner.Run(string)"/> method of <see cref="BaseProcessRunner"/> to run a command that will fail.
+        /// Tests the <see cref="BaseProcessRunner.Run(string, TimeSpan?)"/> method of <see cref="BaseProcessRunner"/> to run a command that will fail.
         /// </summary>
         [Test]
         public void RunDefaultFail()
@@ -365,6 +365,40 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
             Assert.That(result.Data, Is.Not.EqualTo(0));
             Assert.That(runner.STDError, Is.Not.Empty);
+        }
+
+        /// <summary>
+        /// Tests that <see cref="BaseProcessRunner.Run(string, TimeSpan?)"/> executes successfully when the process finishes within the specified timeout.
+        /// </summary>
+        [Test]
+        public void RunWithTimeoutFinishesCleanly()
+        {
+            TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION);
+            TimeSpan timeout = TimeSpan.FromSeconds(5);
+
+            Result<int> result = runner.Run(DEFAULT_APPLICATION_COMMAND, timeout);
+
+            Assert.That(result.Status, Is.EqualTo(ResultStatus.Success));
+            Assert.That(result.Data, Is.EqualTo(0));
+        }
+
+        /// <summary>
+        /// Tests that <see cref="BaseProcessRunner.Run(string, TimeSpan?)"/> force-kills the process and returns a Cancelled status when the timeout expires.
+        /// </summary>
+        [Test]
+        public void RunWithTimeoutExpiresAndKillsProcessTree()
+        {
+            string longRunningApp = OperatingSystem.IsWindows() ? "ping" : "sleep";
+            string longRunningArgs = OperatingSystem.IsWindows() ? "-n 10 127.0.0.1" : "10";
+
+            TestRunner runner = new TestRunner(longRunningApp);
+            TimeSpan timeout = TimeSpan.FromMilliseconds(500);
+
+            Result<int> result = runner.Run(longRunningArgs, timeout);
+
+            Assert.That(result.Status, Is.EqualTo(ResultStatus.Cancelled));
+            Assert.That(result.Data, Is.EqualTo(-1));
+            Assert.That(result.Message, Does.Contain("timed out"));
         }
 
         /// <summary>
@@ -414,7 +448,7 @@ namespace NanoDNA.ProcessRunner.Tests
         }
 
         /// <summary>
-        /// Tests the <see cref="BaseProcessRunner.TryRun(string)"/> method of <see cref="BaseProcessRunner"/> to run a default command.
+        /// Tests the <see cref="BaseProcessRunner.TryRun(string, TimeSpan?)"/> method of <see cref="BaseProcessRunner"/> to run a default command.
         /// </summary>
         [Test]
         public void TryRunDefault()
@@ -429,7 +463,7 @@ namespace NanoDNA.ProcessRunner.Tests
         }
 
         /// <summary>
-        /// Tests the <see cref="BaseProcessRunner.TryRun(string)"/> method of <see cref="BaseProcessRunner"/> to run a command without redirecting output.
+        /// Tests the <see cref="BaseProcessRunner.TryRun(string, TimeSpan?)"/> method of <see cref="BaseProcessRunner"/> to run a command without redirecting output.
         /// </summary>
         [Test]
         public void TryRunNoRedirect()
@@ -443,7 +477,7 @@ namespace NanoDNA.ProcessRunner.Tests
         }
 
         /// <summary>
-        /// Tests the <see cref="BaseProcessRunner.TryRun(string)"/> method of <see cref="BaseProcessRunner"/> to run a command that will fail.
+        /// Tests the <see cref="BaseProcessRunner.TryRun(string, TimeSpan?)"/> method of <see cref="BaseProcessRunner"/> to run a command that will fail.
         /// </summary>
         [Test]
         public void TryRunDefaultFail()
@@ -454,6 +488,37 @@ namespace NanoDNA.ProcessRunner.Tests
 
             Assert.That(result, Is.False);
             Assert.That(runner.STDError, Is.Not.Empty);
+        }
+
+        /// <summary>
+        /// Tests that <see cref="BaseProcessRunner.TryRun(string, TimeSpan?)"/> returns True when the execution completes within the specified timeout.
+        /// </summary>
+        [Test]
+        public void TryRunWithTimeoutFinishesCleanly()
+        {
+            TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION);
+            TimeSpan timeout = TimeSpan.FromSeconds(5);
+
+            bool success = runner.TryRun(DEFAULT_APPLICATION_COMMAND, timeout);
+
+            Assert.That(success, Is.True);
+        }
+
+        /// <summary>
+        /// Tests that <see cref="BaseProcessRunner.TryRun(string, TimeSpan?)"/> returns False when the process execution exceeds the specified timeout.
+        /// </summary>
+        [Test]
+        public void TryRunWithTimeoutExpiresReturnsFalse()
+        {
+            string longRunningApp = OperatingSystem.IsWindows() ? "ping" : "sleep";
+            string longRunningArgs = OperatingSystem.IsWindows() ? "-n 10 127.0.0.1" : "10";
+
+            TestRunner runner = new TestRunner(longRunningApp);
+            TimeSpan timeout = TimeSpan.FromMilliseconds(500);
+
+            bool success = runner.TryRun(longRunningArgs, timeout);
+
+            Assert.That(success, Is.False);
         }
 
         /// <summary>
@@ -954,13 +1019,22 @@ namespace NanoDNA.ProcessRunner.Tests
 
             Result<int> result = await runTask;
 
-            Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
-            Assert.That(result.Data, Is.EqualTo(-1));
-            Assert.That(result.Message, Does.Contain("killed forcefully"));
+            if (OperatingSystem.IsWindows())
+            {
+                Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
+                Assert.That(result.Data, Is.EqualTo(-1));
+                Assert.That(result.Message, Does.Contain("killed forcefully"));
+            }
+            else
+            {
+                Assert.That(result.Status, Is.EqualTo(ResultStatus.Cancelled));
+                Assert.That(result.Data, Is.EqualTo(-1));
+                Assert.That(result.Message, Does.Contain("canceled"));
+            }
         }
 
         /// <summary>
-        /// Tests that <see cref="BaseProcessRunner.Run(string)"/> safely handles internal null runtime objects returned from startup errors and yields an error structure cleanly.
+        /// Tests that <see cref="BaseProcessRunner.Run(string, TimeSpan?)"/> safely handles internal null runtime objects returned from startup errors and yields an error structure cleanly.
         /// </summary>
         [Test]
         public void RunHandlesNullProcessStartRoute()
