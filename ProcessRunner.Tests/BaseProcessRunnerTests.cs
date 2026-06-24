@@ -650,22 +650,10 @@ namespace NanoDNA.ProcessRunner.Tests
             // On Windows, disabling STDIN redirection throws an exception during writing.
             // On Linux, we let the process start normally, but dispose/destroy the runner streams manually
             // right before cancellation to crash the inner stream loop or external utilities.
-            if (OperatingSystem.IsWindows())
-            {
-                runner.StartInfo.RedirectStandardInput = false;
-            }
+            runner.StartInfo.RedirectStandardInput = false;
 
             Task<Result<int>> runTask = runner.RunAsync(longRunningArgs, cts.Token);
             await Task.Delay(250);
-
-            if (!OperatingSystem.IsWindows())
-            {
-                // Force an internal NullReferenceException or InvalidOperationException inside the cancellation task 
-                // by manually breaking the standard stream attachments.
-                runner.StandardErrorBinaryReader.BaseStream.Dispose();
-                runner.StandardErrorBinaryReader.BaseStream.Dispose();
-            }
-
             cts.Cancel();
 
             Result<int> result = await runTask;
@@ -683,8 +671,10 @@ namespace NanoDNA.ProcessRunner.Tests
         {
             // Windows ping ignores STDIN text streams completely.
             // Linux dd reading from a zero-byte generator ignores stream closures and blocks indefinitely until hard-killed.
-            string longRunningApp = OperatingSystem.IsWindows() ? "ping" : "dd";
-            string longRunningArgs = OperatingSystem.IsWindows() ? "-n 10 127.0.0.1" : "if=/dev/zero of=/dev/null";
+            string longRunningApp = OperatingSystem.IsWindows() ? "ping" : "perl";
+            string longRunningArgs = OperatingSystem.IsWindows()
+                ? "-n 10 127.0.0.1"
+                : "-e \"$SIG{TERM}='IGNORE'; while(1){sleep 1;}\"";
 
             TestRunner runner = new TestRunner(longRunningApp);
             using CancellationTokenSource cts = new CancellationTokenSource();
