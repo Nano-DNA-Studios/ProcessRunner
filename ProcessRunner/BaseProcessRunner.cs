@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using NanoDNA.AutomationResults;
 using System.Collections.Generic;
-using System.Net.Http.Headers;
 
 namespace NanoDNA.ProcessRunner
 {
@@ -51,21 +50,29 @@ namespace NanoDNA.ProcessRunner
         /// <inheritdoc />
         public string[] STDError => GetLinesFromStream(_stdError, _errorLock);
 
-        /// <summary>
-        /// Gets whether <see cref="STDOutput"/> is redirected to the console.
-        /// </summary>
+        /// <inheritdoc />
+        public byte[] STDOutputBytes => GetBytesFromStream(_stdOutput, _outputLock);
+
+        /// <inheritdoc />
+        public byte[] STDErrorBytes => GetBytesFromStream(_stdError, _errorLock);
+
+        /// <inheritdoc />
         public bool STDOutputRedirect => StartInfo.RedirectStandardOutput;
 
-        /// <summary>
-        /// Gets whether <see cref="STDError"/> is redirected to the console.
-        /// </summary>
+        /// <inheritdoc />
         public bool STDErrorRedirect => StartInfo.RedirectStandardError;
 
         /// <inheritdoc />
-        public StreamReader StandardOutputStream { get; private set; }
+        public StreamReader StandardOutputReader { get; private set; }
 
         /// <inheritdoc />
-        public StreamReader StandardErrorStream { get; private set; }
+        public StreamReader StandardErrorReader { get; private set; }
+
+        /// <inheritdoc />
+        public BinaryReader StandardOutputBinaryReader { get; private set; }
+
+        /// <inheritdoc />
+        public BinaryReader StandardErrorBinaryReader { get; private set; }
 
         /// <summary>
         /// Stores the standard output messages from the executed process.
@@ -98,8 +105,11 @@ namespace NanoDNA.ProcessRunner
             _stdOutput = new MemoryStream();
             _stdError = new MemoryStream();
 
-            StandardOutputStream = new StreamReader(_stdOutput, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, bufferSize: 1024, leaveOpen: true);
-            StandardErrorStream = new StreamReader(_stdError, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, bufferSize: 1024, leaveOpen: true);
+            StandardOutputReader = new StreamReader(_stdOutput, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, bufferSize: 1024, leaveOpen: true);
+            StandardErrorReader = new StreamReader(_stdError, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, bufferSize: 1024, leaveOpen: true);
+
+            StandardOutputBinaryReader = new BinaryReader(_stdOutput, Encoding.UTF8, leaveOpen: true);
+            StandardErrorBinaryReader = new BinaryReader(_stdError, Encoding.UTF8, leaveOpen: true);
 
             StartInfo = new ProcessStartInfo
             {
@@ -395,6 +405,11 @@ namespace NanoDNA.ProcessRunner
             }
         }
 
+        /// <summary>
+        /// Sends the appropriate signal to the Process to gracefully cancel it
+        /// </summary>
+        /// <param name="process">Process to Cancel</param>
+        /// <returns>Graceful cancellation task to be run</returns>
         private async Task CancelProcessGracefully (Process process)
         {
             if (!OperatingSystem.IsWindows())
@@ -482,6 +497,19 @@ namespace NanoDNA.ProcessRunner
                 stream.Position = originalPosition;
 
                 return lines.ToArray();
+            }
+        }
+
+        private byte[] GetBytesFromStream (MemoryStream stream, object lockObject)
+        {
+            Logger.Trace("Getting Raw Bytes from Stream");
+
+            lock (lockObject)
+            {
+                if (stream == null || stream.Length == 0)
+                    return new byte[0];
+
+                return stream.ToArray();
             }
         }
 
