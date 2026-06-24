@@ -581,8 +581,9 @@ namespace NanoDNA.ProcessRunner.Tests
         [Test]
         public async Task RunAsyncForcefulCancellationTimeout()
         {
-            string longRunningArgs = OperatingSystem.IsWindows() ? "-n 10 127.0.0.1" : "10";
+            //string longRunningArgs = OperatingSystem.IsWindows() ? "-n 10 127.0.0.1" : "10";
             string longRunningApp = OperatingSystem.IsWindows() ? "ping" : "sleep";
+            string longRunningArgs = OperatingSystem.IsWindows() ? "-n 10 127.0.0.1" : "-c \"trap '' SIGTERM; sleep 10\"";
 
             //string app = OperatingSystem.IsWindows() ? "cmd.exe" : "bash";
             //string args = OperatingSystem.IsWindows()
