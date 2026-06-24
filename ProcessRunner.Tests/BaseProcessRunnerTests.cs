@@ -587,14 +587,13 @@ namespace NanoDNA.ProcessRunner.Tests
             TestRunner runner = new TestRunner(longRunningApp);
             using CancellationTokenSource cts = new CancellationTokenSource();
 
-            // Intentionally sabotage the environment properties to force killTask to crash
             if (OperatingSystem.IsWindows())
             {
                 runner.StartInfo.RedirectStandardInput = false;
             }
             else
             {
-                runner.StartInfo.EnvironmentVariables["PATH"] = string.Empty;
+                runner.StartInfo.WorkingDirectory = "/nonexistent-directory-to-force-failure";
             }
 
             Task<Result<int>> runTask = runner.RunAsync(longRunningArgs, cts.Token);
@@ -615,10 +614,8 @@ namespace NanoDNA.ProcessRunner.Tests
         public async Task RunAsyncForcefulCancellationTimeout()
         {
             //string longRunningArgs = OperatingSystem.IsWindows() ? "-n 10 127.0.0.1" : "10";
-            string longRunningApp = OperatingSystem.IsWindows() ? "ping" : "bash";
-            string longRunningArgs = OperatingSystem.IsWindows() 
-                ? "-n 10 127.0.0.1" 
-                : "-c \"trap '' SIGTERM; sleep 10\"";
+            string longRunningApp = OperatingSystem.IsWindows() ? "ping" : "tail";
+            string longRunningArgs = OperatingSystem.IsWindows() ? "-n 10 127.0.0.1" : "-f /dev/null";
 
             //string app = OperatingSystem.IsWindows() ? "cmd.exe" : "bash";
             //string args = OperatingSystem.IsWindows()
