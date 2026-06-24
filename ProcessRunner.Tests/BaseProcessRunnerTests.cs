@@ -555,8 +555,11 @@ namespace NanoDNA.ProcessRunner.Tests
         [Test]
         public async Task RunAsyncGracefulCancellation()
         {
-            string longRunningArgs = OperatingSystem.IsWindows() ? "-n 10 127.0.0.1" : "10";
-            string longRunningApp = OperatingSystem.IsWindows() ? "ping" : "sleep";
+            string longRunningApp = OperatingSystem.IsWindows() ? "cmd.exe" : "sleep";
+            string longRunningArgs = OperatingSystem.IsWindows() ? "/k" : "10";
+
+            //string longRunningArgs = OperatingSystem.IsWindows() ? "-n 10 127.0.0.1" : "10";
+            //string longRunningApp = OperatingSystem.IsWindows() ? "ping" : "sleep";
 
             TestRunner runner = new TestRunner(longRunningApp);
             using CancellationTokenSource cts = new CancellationTokenSource();
@@ -567,7 +570,7 @@ namespace NanoDNA.ProcessRunner.Tests
 
             Result<int> result = await runTask;
 
-            Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
+            Assert.That(result.Status, Is.EqualTo(ResultStatus.Cancelled));
             Assert.That(result.Data, Is.EqualTo(-1));
             Assert.That(result.Message, Does.Contain("canceled"));
         }
@@ -578,15 +581,18 @@ namespace NanoDNA.ProcessRunner.Tests
         [Test]
         public async Task RunAsyncForcefulCancellationTimeout()
         {
-            string app = OperatingSystem.IsWindows() ? "cmd.exe" : "bash";
-            string args = OperatingSystem.IsWindows()
-                ? "/c \"@echo off & choice /t 10 /d y > nul\""
-                : "-c \"trap '' SIGTERM; sleep 10\"";
+            string longRunningArgs = OperatingSystem.IsWindows() ? "-n 10 127.0.0.1" : "10";
+            string longRunningApp = OperatingSystem.IsWindows() ? "ping" : "sleep";
 
-            TestRunner runner = new TestRunner(app);
+            //string app = OperatingSystem.IsWindows() ? "cmd.exe" : "bash";
+            //string args = OperatingSystem.IsWindows()
+            //    ? "/c \"@echo off & choice /t 10 /d y > nul\""
+            //    : "-c \"trap '' SIGTERM; sleep 10\"";
+
+            TestRunner runner = new TestRunner(longRunningApp);
             using CancellationTokenSource cts = new CancellationTokenSource();
 
-            Task<Result<int>> runTask = runner.RunAsync(args, cts.Token);
+            Task<Result<int>> runTask = runner.RunAsync(longRunningArgs, cts.Token);
             await Task.Delay(250);
             cts.Cancel();
 
