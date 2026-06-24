@@ -575,6 +575,66 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.That(result.Message, Does.Contain("canceled"));
         }
 
+        ///// <summary>
+        ///// Tests that <see cref="BaseProcessRunner.RunAsync(string, CancellationToken)"/> handles an exception during the graceful cancellation sequence by force-killing the process and returning an Error status.
+        ///// </summary>
+        //[Test]
+        //public async Task RunAsyncCancellationErrorFallback()
+        //{
+        //    string longRunningApp = OperatingSystem.IsWindows() ? "cmd.exe" : "sleep";
+        //    string longRunningArgs = OperatingSystem.IsWindows() ? "/k" : "10";
+
+        //    TestRunner runner = new TestRunner(longRunningApp);
+        //    using CancellationTokenSource cts = new CancellationTokenSource();
+
+        //    if (OperatingSystem.IsWindows())
+        //    {
+        //        runner.StartInfo.RedirectStandardInput = false;
+        //    }
+        //    else
+        //    {
+        //        runner.StartInfo.WorkingDirectory = "/nonexistent-directory-to-force-failure";
+        //    }
+
+        //    Task<Result<int>> runTask = runner.RunAsync(longRunningArgs, cts.Token);
+        //    await Task.Delay(250);
+        //    cts.Cancel();
+
+        //    Result<int> result = await runTask;
+
+        //    Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
+        //    Assert.That(result.Data, Is.EqualTo(-1));
+        //    Assert.That(result.Message, Does.Contain("killed forcefully"));
+        //}
+
+        ///// <summary>
+        ///// Tests that <see cref="BaseProcessRunner.RunAsync(string, CancellationToken)"/> forcefully kills a process tree if it refuses to close gracefully within the timeout.
+        ///// </summary>
+        //[Test]
+        //public async Task RunAsyncForcefulCancellationTimeout()
+        //{
+        //    string longRunningApp = OperatingSystem.IsWindows() ? "ping" : "tail";
+        //    string longRunningArgs = OperatingSystem.IsWindows() ? "-n 10 127.0.0.1" : "-f /dev/null";
+
+        //    //string app = OperatingSystem.IsWindows() ? "cmd.exe" : "bash";
+        //    //string args = OperatingSystem.IsWindows()
+        //    //    ? "/c \"@echo off & choice /t 10 /d y > nul\""
+        //    //    : "-c \"trap '' SIGTERM; sleep 10\"";
+
+        //    TestRunner runner = new TestRunner(longRunningApp);
+        //    using CancellationTokenSource cts = new CancellationTokenSource();
+
+        //    Task<Result<int>> runTask = runner.RunAsync(longRunningArgs, cts.Token);
+        //    await Task.Delay(250);
+        //    cts.Cancel();
+
+        //    Result<int> result = await runTask;
+
+        //    Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
+        //    Assert.That(result.Data, Is.EqualTo(-1));
+        //    Assert.That(result.Message, Does.Contain("killed forcefully"));
+        //}
+
         /// <summary>
         /// Tests that <see cref="BaseProcessRunner.RunAsync(string, CancellationToken)"/> handles an exception during the graceful cancellation sequence by force-killing the process and returning an Error status.
         /// </summary>
@@ -587,17 +647,25 @@ namespace NanoDNA.ProcessRunner.Tests
             TestRunner runner = new TestRunner(longRunningApp);
             using CancellationTokenSource cts = new CancellationTokenSource();
 
+            // On Windows, disabling STDIN redirection throws an exception during writing.
+            // On Linux, we let the process start normally, but dispose/destroy the runner streams manually
+            // right before cancellation to crash the inner stream loop or external utilities.
             if (OperatingSystem.IsWindows())
             {
                 runner.StartInfo.RedirectStandardInput = false;
             }
-            else
-            {
-                runner.StartInfo.WorkingDirectory = "/nonexistent-directory-to-force-failure";
-            }
 
             Task<Result<int>> runTask = runner.RunAsync(longRunningArgs, cts.Token);
             await Task.Delay(250);
+
+            if (!OperatingSystem.IsWindows())
+            {
+                // Force an internal NullReferenceException or InvalidOperationException inside the cancellation task 
+                // by manually breaking the standard stream attachments.
+                runner.StandardErrorBinaryReader.BaseStream.Dispose();
+                runner.StandardErrorBinaryReader.BaseStream.Dispose();
+            }
+
             cts.Cancel();
 
             Result<int> result = await runTask;
@@ -613,14 +681,10 @@ namespace NanoDNA.ProcessRunner.Tests
         [Test]
         public async Task RunAsyncForcefulCancellationTimeout()
         {
-            //string longRunningArgs = OperatingSystem.IsWindows() ? "-n 10 127.0.0.1" : "10";
-            string longRunningApp = OperatingSystem.IsWindows() ? "ping" : "tail";
-            string longRunningArgs = OperatingSystem.IsWindows() ? "-n 10 127.0.0.1" : "-f /dev/null";
-
-            //string app = OperatingSystem.IsWindows() ? "cmd.exe" : "bash";
-            //string args = OperatingSystem.IsWindows()
-            //    ? "/c \"@echo off & choice /t 10 /d y > nul\""
-            //    : "-c \"trap '' SIGTERM; sleep 10\"";
+            // Windows ping ignores STDIN text streams completely.
+            // Linux dd reading from a zero-byte generator ignores stream closures and blocks indefinitely until hard-killed.
+            string longRunningApp = OperatingSystem.IsWindows() ? "ping" : "dd";
+            string longRunningArgs = OperatingSystem.IsWindows() ? "-n 10 127.0.0.1" : "if=/dev/zero of=/dev/null";
 
             TestRunner runner = new TestRunner(longRunningApp);
             using CancellationTokenSource cts = new CancellationTokenSource();
@@ -687,7 +751,7 @@ namespace NanoDNA.ProcessRunner.Tests
         }
 
         /// <summary>
-        /// Tests that <see cref="BaseProcessRunner.StandardOutputStream"/> and <see cref="BaseProcessRunner.StandardErrorStream"/>
+        /// Tests that <see cref="BaseProcessRunner.StandardOutputReader"/> and <see cref="BaseProcessRunner.StandardErrorReader"/>
         /// correctly expose the underlying stream readers.
         /// </summary>
         [Test]
@@ -695,10 +759,10 @@ namespace NanoDNA.ProcessRunner.Tests
         {
             TestRunner runner = new TestRunner(GetOSDefaultApplication());
 
-            Assert.That(runner.StandardOutputStream, Is.Not.Null);
-            Assert.That(runner.StandardErrorStream, Is.Not.Null);
-            Assert.That(runner.StandardOutputStream, Is.InstanceOf<StreamReader>());
-            Assert.That(runner.StandardErrorStream, Is.InstanceOf<StreamReader>());
+            Assert.That(runner.StandardOutputReader, Is.Not.Null);
+            Assert.That(runner.StandardErrorReader, Is.Not.Null);
+            Assert.That(runner.StandardOutputReader, Is.InstanceOf<StreamReader>());
+            Assert.That(runner.StandardErrorReader, Is.InstanceOf<StreamReader>());
         }
 
         /// <summary>
@@ -712,7 +776,7 @@ namespace NanoDNA.ProcessRunner.Tests
             byte[] bytes = System.Text.Encoding.UTF8.GetBytes($"First line{Environment.NewLine}Second line{Environment.NewLine}");
 
             // Write directly to the underlying memory stream layout
-            runner.StandardOutputStream.BaseStream.Write(bytes, 0, bytes.Length);
+            runner.StandardOutputReader.BaseStream.Write(bytes, 0, bytes.Length);
 
             string[] extractedLines = runner.STDOutput;
 
@@ -733,7 +797,7 @@ namespace NanoDNA.ProcessRunner.Tests
             byte[] bytes = System.Text.Encoding.UTF8.GetBytes($"Error log 1{Environment.NewLine}Error log 2{Environment.NewLine}");
 
             // Write directly to the underlying memory stream layout
-            runner.StandardErrorStream.BaseStream.Write(bytes, 0, bytes.Length);
+            runner.StandardErrorReader.BaseStream.Write(bytes, 0, bytes.Length);
 
             string[] extractedLines = runner.STDError;
 
@@ -752,7 +816,7 @@ namespace NanoDNA.ProcessRunner.Tests
             TestRunner runner = new TestRunner(GetOSDefaultApplication());
             byte[] bytes = System.Text.Encoding.UTF8.GetBytes($"Line 1{Environment.NewLine}Line 2{Environment.NewLine}");
 
-            runner.StandardOutputStream.BaseStream.Write(bytes, 0, bytes.Length);
+            runner.StandardOutputReader.BaseStream.Write(bytes, 0, bytes.Length);
 
             List<Task<string[]>> readTasks = new List<Task<string[]>>();
 
