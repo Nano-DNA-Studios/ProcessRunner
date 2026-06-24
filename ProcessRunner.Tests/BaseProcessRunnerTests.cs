@@ -623,9 +623,6 @@ namespace NanoDNA.ProcessRunner.Tests
             string longRunningApp = OperatingSystem.IsWindows() ? "cmd.exe" : "sleep";
             string longRunningArgs = OperatingSystem.IsWindows() ? "/k" : "10";
 
-            //string longRunningArgs = OperatingSystem.IsWindows() ? "-n 10 127.0.0.1" : "10";
-            //string longRunningApp = OperatingSystem.IsWindows() ? "ping" : "sleep";
-
             TestRunner runner = new TestRunner(longRunningApp);
             using CancellationTokenSource cts = new CancellationTokenSource();
 
@@ -681,11 +678,6 @@ namespace NanoDNA.ProcessRunner.Tests
         {
             string longRunningApp = OperatingSystem.IsWindows() ? "ping" : "perl";
             string longRunningArgs = OperatingSystem.IsWindows() ? "-n 10 127.0.0.1" : "-e \"$SIG{TERM}='IGNORE'; while(1){sleep 1;}\"";
-
-            //string app = OperatingSystem.IsWindows() ? "cmd.exe" : "bash";
-            //string args = OperatingSystem.IsWindows()
-            //    ? "/c \"@echo off & choice /t 10 /d y > nul\""
-            //    : "-c \"trap '' SIGTERM; sleep 10\"";
 
             TestRunner runner = new TestRunner(longRunningApp);
             using CancellationTokenSource cts = new CancellationTokenSource();
