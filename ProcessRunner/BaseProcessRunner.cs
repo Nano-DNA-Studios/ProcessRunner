@@ -260,7 +260,7 @@ namespace NanoDNA.ProcessRunner
         }
 
         /// <inheritdoc/>
-        public virtual Result<int> Run(string args)
+        public virtual Result<int> Run(string args, TimeSpan? timeout = null)
         {
             string command = $"{ApplicationName} {args}";
             StartInfo.Arguments = args;
@@ -286,18 +286,22 @@ namespace NanoDNA.ProcessRunner
                 if (STDErrorRedirect)
                     process.BeginErrorReadLine();
 
-                //Task outputCopyTask = STDOutputRedirect ? process.StandardOutput.BaseStream.CopyToAsync(_stdOutput) : Task.CompletedTask;
-                //Task errorCopyTask = STDErrorRedirect ? process.StandardError.BaseStream.CopyToAsync(_stdError) : Task.CompletedTask;
+                bool exited = true;
 
-                process.WaitForExit();
+                if (timeout != null && timeout.HasValue)
+                    exited = process.WaitForExit(timeout.Value);
+                else
+                    process.WaitForExit();
 
-                //Task.WaitAll(outputCopyTask, errorCopyTask);
+                if (!exited)
+                {
+                    Logger.Warn($"Process timed out after {timeout}. Force killing process tree: {command}");
 
-                //if (STDOutputRedirect)
-                //    process.StandardOutput.BaseStream.CopyTo(_stdOutput);
+                    process.Kill(entireProcessTree: true);
+                    process.WaitForExit();
 
-                //if (STDErrorRedirect)
-                //    process.StandardError.BaseStream.CopyTo(_stdError);
+                    return new Result<int>(ResultStatus.Cancelled, FAILED_TO_RUN_EXIT_CODE, $"Command timed out: {command}");
+                }
 
                 if (process.ExitCode == 0)
                 {
@@ -340,9 +344,6 @@ namespace NanoDNA.ProcessRunner
                 if (STDErrorRedirect)
                     process.BeginErrorReadLine();
 
-                //Task outputCopyTask = STDOutputRedirect ? process.StandardOutput.BaseStream.CopyToAsync(_stdOutput, cancellationToken) : Task.CompletedTask;
-                //Task errorCopyTask = STDErrorRedirect ? process.StandardError.BaseStream.CopyToAsync(_stdError, cancellationToken) : Task.CompletedTask;
-
                 try
                 {
                     await process.WaitForExitAsync(cancellationToken);
@@ -356,7 +357,7 @@ namespace NanoDNA.ProcessRunner
 
                     Task gracePeriodTask = Task.Delay(5000);
                     Task killTask = CancelProcessGracefully(process);
-                    
+
                     Task completedKillTask = await Task.WhenAny(killTask, gracePeriodTask);
 
                     bool graceCondition = completedKillTask == gracePeriodTask && !process.HasExited;
@@ -385,14 +386,6 @@ namespace NanoDNA.ProcessRunner
                     return new Result<int>(ResultStatus.Cancelled, FAILED_TO_RUN_EXIT_CODE, $"Command was canceled and exited gracefully: {command}");
                 }
 
-                //await Task.WhenAll(outputCopyTask, errorCopyTask);
-
-                //if (STDOutputRedirect)
-                //    await process.StandardOutput.BaseStream.CopyToAsync(_stdOutput, cancellationToken);
-
-                //if (STDErrorRedirect)
-                //    await process.StandardError.BaseStream.CopyToAsync(_stdError, cancellationToken);
-
                 if (process.ExitCode == 0)
                 {
                     Logger.Info($"Successfully Ran Command : {command}");
@@ -405,12 +398,27 @@ namespace NanoDNA.ProcessRunner
             }
         }
 
+        /// <inheritdoc/>
+        public virtual bool TryRun(string args, TimeSpan? timeout = null)
+        {
+            Logger.Trace("Running TryRun");
+            return this.Run(args, timeout).Status == ResultStatus.Success;
+        }
+
+        /// <inheritdoc/>
+        public virtual async Task<bool> TryRunAsync(string args, CancellationToken cancellationToken = default)
+        {
+            Logger.Trace("Running TryRunAsync");
+            Result<int> result = await this.RunAsync(args, cancellationToken);
+            return result.Status == ResultStatus.Success;
+        }
+
         /// <summary>
         /// Sends the appropriate signal to the Process to gracefully cancel it
         /// </summary>
         /// <param name="process">Process to Cancel</param>
         /// <returns>Graceful cancellation task to be run</returns>
-        private async Task CancelProcessGracefully (Process process)
+        private async Task CancelProcessGracefully(Process process)
         {
             if (!OperatingSystem.IsWindows())
             {
@@ -446,21 +454,6 @@ namespace NanoDNA.ProcessRunner
             process.StandardInput.Close();
 
             await process.WaitForExitAsync();
-        }
-
-        /// <inheritdoc/>
-        public virtual bool TryRun(string args)
-        {
-            Logger.Trace("Running TryRun");
-            return this.Run(args).Status == ResultStatus.Success;
-        }
-
-        /// <inheritdoc/>
-        public virtual async Task<bool> TryRunAsync(string args, CancellationToken cancellationToken = default)
-        {
-            Logger.Trace("Running TryRunAsync");
-            Result<int> result = await this.RunAsync(args, cancellationToken);
-            return result.Status == ResultStatus.Success;
         }
 
         /// <summary>
@@ -500,7 +493,13 @@ namespace NanoDNA.ProcessRunner
             }
         }
 
-        private byte[] GetBytesFromStream (MemoryStream stream, object lockObject)
+        /// <summary>
+        /// Extracts the array of bytes from the given memory stream in a thread-safe manner.
+        /// </summary>
+        /// <param name="stream">The source memory stream to read from.</param>
+        /// <param name="lockObject">The synchronization object used to secure access to the stream.</param>
+        /// <returns>An array of bytes representing the data from the stream</returns>
+        private byte[] GetBytesFromStream(MemoryStream stream, object lockObject)
         {
             Logger.Trace("Getting Raw Bytes from Stream");
 

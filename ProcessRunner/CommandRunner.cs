@@ -207,9 +207,9 @@ namespace NanoDNA.ProcessRunner
         }
 
         /// <inheritdoc/>
-        public override Result<int> Run(string args)
+        public override Result<int> Run(string args, TimeSpan? timeout = null)
         {
-            return base.Run(GetApplicationArguments(Application, args));
+            return base.Run(GetApplicationArguments(Application, args), timeout);
         }
 
         /// <inheritdoc/>
@@ -219,10 +219,10 @@ namespace NanoDNA.ProcessRunner
         }
 
         /// <inheritdoc/>
-        public override bool TryRun(string args)
+        public override bool TryRun(string args, TimeSpan? timeout = null)
         {
             Logger.Trace("Running TryRun");
-            return this.Run(args).Status == ResultStatus.Success;
+            return this.Run(args, timeout).Status == ResultStatus.Success;
         }
 
         /// <inheritdoc/>
