@@ -891,18 +891,22 @@ namespace NanoDNA.ProcessRunner.Tests
         {
             TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION);
             bool outputReceived = false;
+            string output = "";
 
             runner.STDOutputReceived += (sender, e) =>
             {
-                Console.WriteLine("IDK");
                 if (e.Data != null)
+                {
                     outputReceived = true;
+                    output = e.Data;
+                }
             };
 
             Result<int> result = runner.Run(DEFAULT_APPLICATION_COMMAND);
 
             Assert.That(result.Status, Is.EqualTo(ResultStatus.Success));
             Assert.That(outputReceived, Is.True);
+            Assert.That(output, Is.EqualTo(DEFAULT_PROCESS_OUTPUT));
         }
 
         /// <summary>
@@ -1043,6 +1047,190 @@ namespace NanoDNA.ProcessRunner.Tests
 
             Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
             Assert.That(result.Message, Does.Contain("failed").Or.Contain("code"));
+        }
+
+        /// <summary>
+        /// Tests that <see cref="BaseProcessRunner.Run(string, TimeSpan?)"/> captures raw bytes and encoded text formats without corruption.
+        /// </summary>
+        [Test]
+        public void RunWithRawBytesAndBase64OutputCapturesCorrectBytes()
+        {
+            string application = GetOSDefaultApplication();
+            TestRunner runner = new TestRunner(application);
+
+            byte[] rawBytes = new byte[] { 0x00, 0x01, 0x7F, 0x80, 0xFF, 0x3A };
+            string base64String = Convert.ToBase64String(rawBytes);
+            byte[] combinedBytes = System.Text.Encoding.UTF8.GetBytes("Payload:" + base64String + Environment.NewLine);
+
+            runner.StandardOutputReader.BaseStream.Write(combinedBytes, 0, combinedBytes.Length);
+
+            Assert.That(runner.STDOutputBytes, Is.EqualTo(combinedBytes));
+
+            string recoveredText = System.Text.Encoding.UTF8.GetString(runner.STDOutputBytes);
+            Assert.That(recoveredText, Does.Contain(base64String));
+        }
+
+        /// <summary>
+        /// Tests that <see cref="BaseProcessRunner.RunAsync(string, CancellationToken)"/> extracts raw data variants via output and error arrays safely.
+        /// </summary>
+        [Test]
+        public async Task RunAsyncWithRawBytesAndBase64OutputCapturesCorrectBytes()
+        {
+            string application = GetOSDefaultApplication();
+            TestRunner runner = new TestRunner(application);
+
+            byte[] expectedOutputBytes = new byte[] { 0xDE, 0xAD, 0xBE, 0xEF, 0x00, 0x0A };
+            byte[] expectedErrorBytes = new byte[] { 0xCA, 0xFE, 0xBA, 0xBE, 0x20, 0x0D };
+
+            await runner.StandardOutputReader.BaseStream.WriteAsync(expectedOutputBytes, 0, expectedOutputBytes.Length);
+            await runner.StandardErrorReader.BaseStream.WriteAsync(expectedErrorBytes, 0, expectedErrorBytes.Length);
+
+            Assert.That(runner.STDOutputBytes, Is.EqualTo(expectedOutputBytes));
+            Assert.That(runner.STDErrorBytes, Is.EqualTo(expectedErrorBytes));
+        }
+
+        /// <summary>
+        /// Tests that sequential events split text line outputs into subscriptions systematically.
+        /// </summary>
+        [Test]
+        public void RunSubscriptionReceivesLineByLineOutputCorrectly()
+        {
+            TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION);
+            List<string> lines = new List<string>();
+
+            runner.STDOutputReceived += (sender, e) =>
+            {
+                if (e.Data != null)
+                    lines.Add(e.Data);
+            };
+
+            byte[] buffer = System.Text.Encoding.UTF8.GetBytes("Line 1\nLine 2\r\nLine 3\n");
+            System.Text.StringBuilder lineBuilder = new System.Text.StringBuilder();
+
+            var method = typeof(BaseProcessRunner).GetMethod("SaveSTDOutput",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+            method!.Invoke(runner, new object[] { buffer, buffer.Length, lineBuilder });
+
+            Assert.That(lines.Count, Is.EqualTo(3));
+            Assert.That(lines[0], Is.EqualTo("Line 1"));
+            Assert.That(lines[1], Is.EqualTo("Line 2"));
+            Assert.That(lines[2], Is.EqualTo("Line 3"));
+        }
+
+        /// <summary>
+        /// Tests that async process loops parse discrete tick sequences securely across active stream subscriptions.
+        /// </summary>
+        [Test]
+        public async Task RunAsyncSubscriptionReceivesLineByLineOutputCorrectly()
+        {
+            TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION);
+            List<string> outputLines = new List<string>();
+            List<string> errorLines = new List<string>();
+
+            runner.STDOutputReceived += (sender, e) => { if (e.Data != null) outputLines.Add(e.Data); };
+            runner.STDErrorReceived += (sender, e) => { if (e.Data != null) errorLines.Add(e.Data); };
+
+            byte[] outBuffer = System.Text.Encoding.UTF8.GetBytes("Async Line 1\nAsync Line 2\n");
+            byte[] errBuffer = System.Text.Encoding.UTF8.GetBytes("Async Error Line 1\n");
+            System.Text.StringBuilder outBuilder = new System.Text.StringBuilder();
+            System.Text.StringBuilder errBuilder = new System.Text.StringBuilder();
+
+            var saveOutMethod = typeof(BaseProcessRunner).GetMethod("SaveSTDOutput", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var saveErrMethod = typeof(BaseProcessRunner).GetMethod("SaveSTDError", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+            saveOutMethod!.Invoke(runner, new object[] { outBuffer, outBuffer.Length, outBuilder });
+            saveErrMethod!.Invoke(runner, new object[] { errBuffer, errBuffer.Length, errBuilder });
+
+            await Task.Yield();
+
+            Assert.That(outputLines.Count, Is.EqualTo(2));
+            Assert.That(outputLines[0], Is.EqualTo("Async Line 1"));
+            Assert.That(errorLines.Count, Is.EqualTo(1));
+            Assert.That(errorLines[0], Is.EqualTo("Async Error Line 1"));
+        }
+
+        /// <summary>
+        /// Tests that <see cref="BaseProcessRunner"/> handles lines that do not end with a newline character correctly.
+        /// </summary>
+        [Test]
+        public void RunSubscriptionHandlesTrailingTextWithoutNewline()
+        {
+            TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION);
+            List<string> lines = new List<string>();
+
+            runner.STDOutputReceived += (sender, e) =>
+            {
+                if (e.Data != null)
+                    lines.Add(e.Data);
+            };
+
+            byte[] buffer = System.Text.Encoding.UTF8.GetBytes("Line 1\nTrailing text");
+            System.Text.StringBuilder lineBuilder = new System.Text.StringBuilder();
+
+            var method = typeof(BaseProcessRunner).GetMethod("SaveSTDOutput",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+            method!.Invoke(runner, new object[] { buffer, buffer.Length, lineBuilder });
+
+            Assert.That(lines.Count, Is.EqualTo(1));
+            Assert.That(lines[0], Is.EqualTo("Line 1"));
+            Assert.That(lineBuilder.ToString(), Is.EqualTo("Trailing text"));
+        }
+
+        /// <summary>
+        /// Tests that lines containing only whitespace characters are preserved and dispatched to the event receivers correctly.
+        /// </summary>
+        [Test]
+        public void RunSubscriptionHandlesWhitespaceLines()
+        {
+            TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION);
+            List<string> lines = new List<string>();
+
+            runner.STDOutputReceived += (sender, e) =>
+            {
+                if (e.Data != null)
+                    lines.Add(e.Data);
+            };
+
+            byte[] buffer = System.Text.Encoding.UTF8.GetBytes("Line 1\n \nLine 3\n");
+            System.Text.StringBuilder lineBuilder = new System.Text.StringBuilder();
+
+            var method = typeof(BaseProcessRunner).GetMethod("SaveSTDOutput",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+            method!.Invoke(runner, new object[] { buffer, buffer.Length, lineBuilder });
+
+            Assert.That(lines.Count, Is.EqualTo(3));
+            Assert.That(lines[0], Is.EqualTo("Line 1"));
+            Assert.That(lines[1], Is.EqualTo(" "));
+            Assert.That(lines[2], Is.EqualTo("Line 3"));
+        }
+
+        /// <summary>
+        /// Tests that zero or negative byte counts are rejected safely without invoking event subscribers.
+        /// </summary>
+        [Test]
+        public void SaveSTDOutputWithZeroCountDoesNotInvokeEvent()
+        {
+            TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION);
+            bool eventTriggered = false;
+
+            runner.STDOutputReceived += (sender, e) =>
+            {
+                eventTriggered = true;
+            };
+
+            byte[] buffer = System.Text.Encoding.UTF8.GetBytes("Valid Line\n");
+            System.Text.StringBuilder lineBuilder = new System.Text.StringBuilder();
+
+            var method = typeof(BaseProcessRunner).GetMethod("SaveSTDOutput",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+            method!.Invoke(runner, new object[] { buffer, 0, lineBuilder });
+
+            Assert.That(eventTriggered, Is.False);
+            Assert.That(runner.STDOutputBytes.Length, Is.EqualTo(0));
         }
     }
 }
