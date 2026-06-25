@@ -35,6 +35,14 @@ namespace NanoDNA.ProcessRunner
         /// </summary>
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
+        /// <summary>
+        /// Delegate function used to pass the <see cref="SaveSTDOutput(byte[], int, StringBuilder)"/> and <see cref="SaveSTDError(byte[], int, StringBuilder)"/> functions to the <see cref="CreateWriterTask(Stream, StreamChunkProcessor, DataReceivedEventHandler?)"/> function
+        /// </summary>
+        /// <param name="buffer">Buffer of bytes to write</param>
+        /// <param name="bytesRead">Number of bytes to write</param>
+        /// <param name="lineBuilder">The converted string line to construct from the bytes</param>
+        private delegate void StreamChunkProcessor(byte[] buffer, int bytesRead, StringBuilder lineBuilder);
+
         /// <inheritdoc />
         public string ApplicationName => StartInfo.FileName;
 
@@ -231,6 +239,8 @@ namespace NanoDNA.ProcessRunner
         /// <param name="lineBuilder">The converted string line to construct from the bytes</param>
         protected void SaveSTDOutput(byte[] buffer, int count, StringBuilder lineBuilder)
         {
+            Logger.Trace("Saving Data to STD Output");
+
             if (count <= 0)
                 return;
 
@@ -251,6 +261,8 @@ namespace NanoDNA.ProcessRunner
         /// <param name="lineBuilder">The converted string line to construct from the bytes</param>
         protected void SaveSTDError(byte[] buffer, int count, StringBuilder lineBuilder)
         {
+            Logger.Trace("Saving Data to STD Error");
+
             if (count <= 0)
                 return;
 
@@ -263,11 +275,18 @@ namespace NanoDNA.ProcessRunner
                 ParseAndInvokeLine(buffer, count, lineBuilder, line => STDErrorReceived?.Invoke(this, CreateEventArgs(line)));
         }
 
+        /// <summary>
+        /// Parses a raw byte buffer chunk into text strings line-by-line, omitting carriage returns, and dispatches them to a parsing action upon encountering a newline character.
+        /// </summary>
+        /// <param name="buffer">The raw byte array chunk received from the process stream.</param>
+        /// <param name="count">The number of valid bytes to read from the buffer.</param>
+        /// <param name="lineBuilder">The persistent string builder instance used to store and aggregate incomplete text fragments across chunks.</param>
+        /// <param name="onLineParsed">The callback action to execute with the string data whenever a complete line is parsed.</param>
         private void ParseAndInvokeLine(byte[] buffer, int count, StringBuilder lineBuilder, Action<string> onLineParsed)
         {
-            string textChunk = Encoding.UTF8.GetString(buffer, 0, count);
-
             Logger.Trace($"Parsing and Invoking line");
+
+            string textChunk = Encoding.UTF8.GetString(buffer, 0, count);
 
             for (int i = 0; i < textChunk.Length; i++)
             {
@@ -285,6 +304,11 @@ namespace NanoDNA.ProcessRunner
             }
         }
 
+        /// <summary>
+        /// Instantiates a new <see cref="DataReceivedEventArgs"/> instance by reflecting into its internal constructor to pass line data.
+        /// </summary>
+        /// <param name="lineData">The string data representing the parsed line to attach to the event arguments.</param>
+        /// <returns>A new non-null instance of <see cref="DataReceivedEventArgs"/> containing the line data.</returns>
         private DataReceivedEventArgs CreateEventArgs(string? lineData)
         {
             Logger.Trace("Creating Event Args for Invoke");
@@ -303,10 +327,17 @@ namespace NanoDNA.ProcessRunner
             )!;
         }
 
-        private delegate void StreamChunkProcessor(byte[] buffer, int bytesRead, StringBuilder lineBuilder);
-
+        /// <summary>
+        /// Creates a new Task to read from the specified process stream, process chunks via a delegate, and invoke the associated data handler.
+        /// </summary>
+        /// <param name="stream">The source process stream to read data from.</param>
+        /// <param name="processor">The chunk processor delegate responsible for handling the byte buffer and updating the string builder state.</param>
+        /// <param name="handler">The data received event handler to invoke when a full line or remaining text block is parsed.</param>
+        /// <returns>A running Task instance that performs the asynchronous stream reading loop.</returns>
         private Task CreateWriterTask(Stream stream, StreamChunkProcessor processor, DataReceivedEventHandler? handler)
         {
+            Logger.Trace("Creating new Write task instance");
+
             return Task.Run(async () =>
             {
                 StringBuilder lineBuilder = new StringBuilder();
@@ -328,6 +359,8 @@ namespace NanoDNA.ProcessRunner
         /// </summary>
         private async Task SafeAwaitStreamsAsync(List<Task> streamTasks)
         {
+            Logger.Trace("Waiting for the Writer Streams");
+
             try
             {
                 Task streamWaitTask = Task.WhenAll(streamTasks);
@@ -351,7 +384,7 @@ namespace NanoDNA.ProcessRunner
             string command = $"{ApplicationName} {args}";
             StartInfo.Arguments = args;
 
-            Logger.Info($"Running Command : {command}");
+            Logger.Debug($"Running Command : {command}");
 
             using (Process? process = Process.Start(StartInfo))
             {
@@ -391,7 +424,7 @@ namespace NanoDNA.ProcessRunner
                 if (process.ExitCode == 0)
                 {
                     Task.WaitAll(streamTasks.ToArray());
-                    Logger.Info($"Successfully Ran Command : {command}");
+                    Logger.Debug($"Successfully Ran Command : {command}");
                     return new Result<int>(ResultStatus.Success, process.ExitCode, $"Command executed successfully: {command}");
                 }
 
@@ -409,7 +442,7 @@ namespace NanoDNA.ProcessRunner
             string command = $"{ApplicationName} {args}";
             StartInfo.Arguments = args;
 
-            Logger.Info($"Running Command : {command}");
+            Logger.Debug($"Running Command : {command}");
 
             using (Process? process = Process.Start(StartInfo))
             {
@@ -465,7 +498,7 @@ namespace NanoDNA.ProcessRunner
 
                 if (process.ExitCode == 0)
                 {
-                    Logger.Info($"Successfully Ran Command : {command}");
+                    Logger.Debug($"Successfully Ran Command : {command}");
                     return new Result<int>(ResultStatus.Success, process.ExitCode, $"Command executed successfully: {command}");
                 }
 
@@ -499,7 +532,7 @@ namespace NanoDNA.ProcessRunner
         {
             if (!OperatingSystem.IsWindows())
             {
-                Logger.Info("Sending SIGTERM Signal");
+                Logger.Debug("Sending SIGTERM Signal");
 
                 ProcessStartInfo startInfo = new ProcessStartInfo()
                 {
@@ -525,7 +558,7 @@ namespace NanoDNA.ProcessRunner
                 return;
             }
 
-            Logger.Info("Sending Ctrl+C Command");
+            Logger.Debug("Sending Ctrl+C Command");
 
             process.StandardInput.WriteLine("\x3");
             process.StandardInput.Close();
