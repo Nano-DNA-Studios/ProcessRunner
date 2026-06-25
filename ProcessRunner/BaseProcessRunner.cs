@@ -50,21 +50,29 @@ namespace NanoDNA.ProcessRunner
         /// <inheritdoc />
         public string[] STDError => GetLinesFromStream(_stdError, _errorLock);
 
-        /// <summary>
-        /// Gets whether <see cref="STDOutput"/> is redirected to the console.
-        /// </summary>
+        /// <inheritdoc />
+        public byte[] STDOutputBytes => GetBytesFromStream(_stdOutput, _outputLock);
+
+        /// <inheritdoc />
+        public byte[] STDErrorBytes => GetBytesFromStream(_stdError, _errorLock);
+
+        /// <inheritdoc />
         public bool STDOutputRedirect => StartInfo.RedirectStandardOutput;
 
-        /// <summary>
-        /// Gets whether <see cref="STDError"/> is redirected to the console.
-        /// </summary>
+        /// <inheritdoc />
         public bool STDErrorRedirect => StartInfo.RedirectStandardError;
 
         /// <inheritdoc />
-        public StreamReader StandardOutputStream { get; private set; }
+        public StreamReader StandardOutputReader { get; private set; }
 
         /// <inheritdoc />
-        public StreamReader StandardErrorStream { get; private set; }
+        public StreamReader StandardErrorReader { get; private set; }
+
+        /// <inheritdoc />
+        public BinaryReader StandardOutputBinaryReader { get; private set; }
+
+        /// <inheritdoc />
+        public BinaryReader StandardErrorBinaryReader { get; private set; }
 
         /// <summary>
         /// Stores the standard output messages from the executed process.
@@ -97,13 +105,17 @@ namespace NanoDNA.ProcessRunner
             _stdOutput = new MemoryStream();
             _stdError = new MemoryStream();
 
-            StandardOutputStream = new StreamReader(_stdOutput, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, bufferSize: 1024, leaveOpen: true);
-            StandardErrorStream = new StreamReader(_stdError, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, bufferSize: 1024, leaveOpen: true);
+            StandardOutputReader = new StreamReader(_stdOutput, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, bufferSize: 1024, leaveOpen: true);
+            StandardErrorReader = new StreamReader(_stdError, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, bufferSize: 1024, leaveOpen: true);
+
+            StandardOutputBinaryReader = new BinaryReader(_stdOutput, Encoding.UTF8, leaveOpen: true);
+            StandardErrorBinaryReader = new BinaryReader(_stdError, Encoding.UTF8, leaveOpen: true);
 
             StartInfo = new ProcessStartInfo
             {
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
+                RedirectStandardInput = true,
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
@@ -126,6 +138,7 @@ namespace NanoDNA.ProcessRunner
                     FileName = applicationName,
                     RedirectStandardOutput = stdOutputRedirect,
                     RedirectStandardError = stdErrorRedirect,
+                    RedirectStandardInput = true,
                     UseShellExecute = false,
                     CreateNoWindow = true
                 });
@@ -136,6 +149,7 @@ namespace NanoDNA.ProcessRunner
                     WorkingDirectory = workingDirectory,
                     RedirectStandardOutput = stdOutputRedirect,
                     RedirectStandardError = stdErrorRedirect,
+                    RedirectStandardInput = true,
                     UseShellExecute = false,
                     CreateNoWindow = true
                 });
@@ -246,7 +260,7 @@ namespace NanoDNA.ProcessRunner
         }
 
         /// <inheritdoc/>
-        public virtual Result<int> Run(string args)
+        public virtual Result<int> Run(string args, TimeSpan? timeout = null)
         {
             string command = $"{ApplicationName} {args}";
             StartInfo.Arguments = args;
@@ -272,7 +286,22 @@ namespace NanoDNA.ProcessRunner
                 if (STDErrorRedirect)
                     process.BeginErrorReadLine();
 
-                process.WaitForExit();
+                bool exited = true;
+
+                if (timeout != null && timeout.HasValue)
+                    exited = process.WaitForExit(timeout.Value);
+                else
+                    process.WaitForExit();
+
+                if (!exited)
+                {
+                    Logger.Warn($"Process timed out after {timeout}. Force killing process tree: {command}");
+
+                    process.Kill(entireProcessTree: true);
+                    process.WaitForExit();
+
+                    return new Result<int>(ResultStatus.Cancelled, FAILED_TO_RUN_EXIT_CODE, $"Command timed out: {command}");
+                }
 
                 if (process.ExitCode == 0)
                 {
@@ -326,13 +355,31 @@ namespace NanoDNA.ProcessRunner
                     if (process.HasExited)
                         return new Result<int>(ResultStatus.Cancelled, FAILED_TO_RUN_EXIT_CODE, $"Command was canceled and has exited: {command}");
 
-                    Task gracePeriodTask = Task.Delay(TimeSpan.FromSeconds(5));
-                    Task completedGraceTask = await Task.WhenAny(process.WaitForExitAsync(), gracePeriodTask);
+                    Task gracePeriodTask = Task.Delay(5000);
+                    Task killTask = CancelProcessGracefully(process);
 
-                    if (completedGraceTask == gracePeriodTask && !process.HasExited)
+                    Task completedKillTask = await Task.WhenAny(killTask, gracePeriodTask);
+
+                    bool graceCondition = completedKillTask == gracePeriodTask && !process.HasExited;
+                    bool killErrorCondition = completedKillTask == killTask && killTask.Exception != null;
+
+                    if (graceCondition)
                     {
-                        Logger.Warn($"Process did not exit gracefully. Force killing process tree: {command}");
+                        Logger.Warn($"Process did not exit within the grace period. Force killing process tree: {command}");
+
                         process.Kill(entireProcessTree: true);
+                        await process.WaitForExitAsync(CancellationToken.None);
+
+                        return new Result<int>(ResultStatus.Error, FAILED_TO_RUN_EXIT_CODE, $"Command was canceled and was killed forcefully: {command}");
+                    }
+
+                    if (killErrorCondition)
+                    {
+                        Logger.Warn($"Process cancellation resulted in an error. Force killing process tree: {command}");
+
+                        process.Kill(entireProcessTree: true);
+                        await process.WaitForExitAsync(CancellationToken.None);
+
                         return new Result<int>(ResultStatus.Error, FAILED_TO_RUN_EXIT_CODE, $"Command was canceled and was killed forcefully: {command}");
                     }
 
@@ -352,10 +399,10 @@ namespace NanoDNA.ProcessRunner
         }
 
         /// <inheritdoc/>
-        public virtual bool TryRun(string args)
+        public virtual bool TryRun(string args, TimeSpan? timeout = null)
         {
             Logger.Trace("Running TryRun");
-            return this.Run(args).Status == ResultStatus.Success;
+            return this.Run(args, timeout).Status == ResultStatus.Success;
         }
 
         /// <inheritdoc/>
@@ -367,6 +414,49 @@ namespace NanoDNA.ProcessRunner
         }
 
         /// <summary>
+        /// Sends the appropriate signal to the Process to gracefully cancel it
+        /// </summary>
+        /// <param name="process">Process to Cancel</param>
+        /// <returns>Graceful cancellation task to be run</returns>
+        private async Task CancelProcessGracefully(Process process)
+        {
+            if (!OperatingSystem.IsWindows())
+            {
+                Logger.Info("Sending SIGTERM Signal");
+
+                ProcessStartInfo startInfo = new ProcessStartInfo()
+                {
+                    FileName = "kill",
+                    Arguments = $"-15 {process.Id}",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+
+                using (Process? killProcess = Process.Start(startInfo))
+                {
+                    if (killProcess == null)
+                    {
+                        Logger.Error($"Kill Process was Null");
+                        throw new Exception("Kill Process Was Null");
+                    }
+
+                    await killProcess.WaitForExitAsync();
+                }
+
+                return;
+            }
+
+            Logger.Info("Sending Ctrl+C Command");
+
+            process.StandardInput.WriteLine("\x3");
+            process.StandardInput.Close();
+
+            await process.WaitForExitAsync();
+        }
+
+        /// <summary>
         /// Extracts individual text lines from a given memory stream in a thread-safe manner.
         /// </summary>
         /// <param name="stream">The source memory stream to read from.</param>
@@ -374,25 +464,51 @@ namespace NanoDNA.ProcessRunner
         /// <returns>An array of strings representing the lines extracted from the stream.</returns>
         private string[] GetLinesFromStream(MemoryStream stream, object lockObject)
         {
+            Logger.Trace("Getting String lines from Stream");
+
             lock (lockObject)
             {
-                if (stream.Length == 0) return Array.Empty<string>();
+                if (stream.Length == 0)
+                    return Array.Empty<string>();
+
+                List<string> lines = new List<string>();
 
                 long originalPosition = stream.Position;
                 stream.Position = 0;
 
-                var lines = new List<string>();
-                using (var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, bufferSize: 1024, leaveOpen: true))
+                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, bufferSize: 1024, leaveOpen: true))
                 {
                     while (!reader.EndOfStream)
                     {
                         string? line = reader.ReadLine();
-                        if (line != null) lines.Add(line);
+
+                        if (line != null)
+                            lines.Add(line);
                     }
                 }
 
                 stream.Position = originalPosition;
+
                 return lines.ToArray();
+            }
+        }
+
+        /// <summary>
+        /// Extracts the array of bytes from the given memory stream in a thread-safe manner.
+        /// </summary>
+        /// <param name="stream">The source memory stream to read from.</param>
+        /// <param name="lockObject">The synchronization object used to secure access to the stream.</param>
+        /// <returns>An array of bytes representing the data from the stream</returns>
+        private byte[] GetBytesFromStream(MemoryStream stream, object lockObject)
+        {
+            Logger.Trace("Getting Raw Bytes from Stream");
+
+            lock (lockObject)
+            {
+                if (stream == null || stream.Length == 0)
+                    return new byte[0];
+
+                return stream.ToArray();
             }
         }
 

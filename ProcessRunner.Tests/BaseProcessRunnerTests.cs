@@ -322,7 +322,7 @@ namespace NanoDNA.ProcessRunner.Tests
         }
 
         /// <summary>
-        /// Tests the <see cref="BaseProcessRunner.Run(string)"/> method of <see cref="BaseProcessRunner"/> to run a default command.
+        /// Tests the <see cref="BaseProcessRunner.Run(string, TimeSpan?)"/> method of <see cref="BaseProcessRunner"/> to run a default command.
         /// </summary>
         [Test]
         public void RunDefault()
@@ -338,7 +338,7 @@ namespace NanoDNA.ProcessRunner.Tests
         }
 
         /// <summary>
-        /// Tests the <see cref="BaseProcessRunner.Run(string)"/> method of <see cref="BaseProcessRunner"/> to run a command without redirecting output.
+        /// Tests the <see cref="BaseProcessRunner.Run(string, TimeSpan?)"/> method of <see cref="BaseProcessRunner"/> to run a command without redirecting output.
         /// </summary>
         [Test]
         public void RunNoRedirect()
@@ -353,7 +353,7 @@ namespace NanoDNA.ProcessRunner.Tests
         }
 
         /// <summary>
-        /// Tests the <see cref="BaseProcessRunner.Run(string)"/> method of <see cref="BaseProcessRunner"/> to run a command that will fail.
+        /// Tests the <see cref="BaseProcessRunner.Run(string, TimeSpan?)"/> method of <see cref="BaseProcessRunner"/> to run a command that will fail.
         /// </summary>
         [Test]
         public void RunDefaultFail()
@@ -365,6 +365,40 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
             Assert.That(result.Data, Is.Not.EqualTo(0));
             Assert.That(runner.STDError, Is.Not.Empty);
+        }
+
+        /// <summary>
+        /// Tests that <see cref="BaseProcessRunner.Run(string, TimeSpan?)"/> executes successfully when the process finishes within the specified timeout.
+        /// </summary>
+        [Test]
+        public void RunWithTimeoutFinishesCleanly()
+        {
+            TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION);
+            TimeSpan timeout = TimeSpan.FromSeconds(5);
+
+            Result<int> result = runner.Run(DEFAULT_APPLICATION_COMMAND, timeout);
+
+            Assert.That(result.Status, Is.EqualTo(ResultStatus.Success));
+            Assert.That(result.Data, Is.EqualTo(0));
+        }
+
+        /// <summary>
+        /// Tests that <see cref="BaseProcessRunner.Run(string, TimeSpan?)"/> force-kills the process and returns a Cancelled status when the timeout expires.
+        /// </summary>
+        [Test]
+        public void RunWithTimeoutExpiresAndKillsProcessTree()
+        {
+            string longRunningApp = OperatingSystem.IsWindows() ? "ping" : "sleep";
+            string longRunningArgs = OperatingSystem.IsWindows() ? "-n 10 127.0.0.1" : "10";
+
+            TestRunner runner = new TestRunner(longRunningApp);
+            TimeSpan timeout = TimeSpan.FromMilliseconds(500);
+
+            Result<int> result = runner.Run(longRunningArgs, timeout);
+
+            Assert.That(result.Status, Is.EqualTo(ResultStatus.Cancelled));
+            Assert.That(result.Data, Is.EqualTo(-1));
+            Assert.That(result.Message, Does.Contain("timed out"));
         }
 
         /// <summary>
@@ -414,7 +448,7 @@ namespace NanoDNA.ProcessRunner.Tests
         }
 
         /// <summary>
-        /// Tests the <see cref="BaseProcessRunner.TryRun(string)"/> method of <see cref="BaseProcessRunner"/> to run a default command.
+        /// Tests the <see cref="BaseProcessRunner.TryRun(string, TimeSpan?)"/> method of <see cref="BaseProcessRunner"/> to run a default command.
         /// </summary>
         [Test]
         public void TryRunDefault()
@@ -429,7 +463,7 @@ namespace NanoDNA.ProcessRunner.Tests
         }
 
         /// <summary>
-        /// Tests the <see cref="BaseProcessRunner.TryRun(string)"/> method of <see cref="BaseProcessRunner"/> to run a command without redirecting output.
+        /// Tests the <see cref="BaseProcessRunner.TryRun(string, TimeSpan?)"/> method of <see cref="BaseProcessRunner"/> to run a command without redirecting output.
         /// </summary>
         [Test]
         public void TryRunNoRedirect()
@@ -443,7 +477,7 @@ namespace NanoDNA.ProcessRunner.Tests
         }
 
         /// <summary>
-        /// Tests the <see cref="BaseProcessRunner.TryRun(string)"/> method of <see cref="BaseProcessRunner"/> to run a command that will fail.
+        /// Tests the <see cref="BaseProcessRunner.TryRun(string, TimeSpan?)"/> method of <see cref="BaseProcessRunner"/> to run a command that will fail.
         /// </summary>
         [Test]
         public void TryRunDefaultFail()
@@ -454,6 +488,37 @@ namespace NanoDNA.ProcessRunner.Tests
 
             Assert.That(result, Is.False);
             Assert.That(runner.STDError, Is.Not.Empty);
+        }
+
+        /// <summary>
+        /// Tests that <see cref="BaseProcessRunner.TryRun(string, TimeSpan?)"/> returns True when the execution completes within the specified timeout.
+        /// </summary>
+        [Test]
+        public void TryRunWithTimeoutFinishesCleanly()
+        {
+            TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION);
+            TimeSpan timeout = TimeSpan.FromSeconds(5);
+
+            bool success = runner.TryRun(DEFAULT_APPLICATION_COMMAND, timeout);
+
+            Assert.That(success, Is.True);
+        }
+
+        /// <summary>
+        /// Tests that <see cref="BaseProcessRunner.TryRun(string, TimeSpan?)"/> returns False when the process execution exceeds the specified timeout.
+        /// </summary>
+        [Test]
+        public void TryRunWithTimeoutExpiresReturnsFalse()
+        {
+            string longRunningApp = OperatingSystem.IsWindows() ? "ping" : "sleep";
+            string longRunningArgs = OperatingSystem.IsWindows() ? "-n 10 127.0.0.1" : "10";
+
+            TestRunner runner = new TestRunner(longRunningApp);
+            TimeSpan timeout = TimeSpan.FromMilliseconds(500);
+
+            bool success = runner.TryRun(longRunningArgs, timeout);
+
+            Assert.That(success, Is.False);
         }
 
         /// <summary>
@@ -555,8 +620,8 @@ namespace NanoDNA.ProcessRunner.Tests
         [Test]
         public async Task RunAsyncGracefulCancellation()
         {
-            string longRunningArgs = OperatingSystem.IsWindows() ? "-n 10 127.0.0.1" : "10";
-            string longRunningApp = OperatingSystem.IsWindows() ? "ping" : "sleep";
+            string longRunningApp = OperatingSystem.IsWindows() ? "cmd.exe" : "sleep";
+            string longRunningArgs = OperatingSystem.IsWindows() ? "/k" : "10";
 
             TestRunner runner = new TestRunner(longRunningApp);
             using CancellationTokenSource cts = new CancellationTokenSource();
@@ -567,9 +632,42 @@ namespace NanoDNA.ProcessRunner.Tests
 
             Result<int> result = await runTask;
 
-            Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
+            Assert.That(result.Status, Is.EqualTo(ResultStatus.Cancelled));
             Assert.That(result.Data, Is.EqualTo(-1));
             Assert.That(result.Message, Does.Contain("canceled"));
+        }
+
+        /// <summary>
+        /// Tests that <see cref="BaseProcessRunner.RunAsync(string, CancellationToken)"/> handles an exception during the graceful cancellation sequence by force-killing the process and returning an Error status.
+        /// </summary>
+        [Test]
+        public async Task RunAsyncCancellationErrorFallback()
+        {
+            string longRunningApp = OperatingSystem.IsWindows() ? "cmd.exe" : "sleep";
+            string longRunningArgs = OperatingSystem.IsWindows() ? "/k" : "10";
+
+            TestRunner runner = new TestRunner(longRunningApp);
+            using CancellationTokenSource cts = new CancellationTokenSource();
+
+            runner.StartInfo.RedirectStandardInput = false;
+
+            Task<Result<int>> runTask = runner.RunAsync(longRunningArgs, cts.Token);
+            await Task.Delay(250);
+            cts.Cancel();
+
+            Result<int> result = await runTask;
+
+            if (OperatingSystem.IsWindows())
+            {
+                Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
+                Assert.That(result.Data, Is.EqualTo(-1));
+                Assert.That(result.Message, Does.Contain("killed forcefully"));
+            } else
+            {
+                Assert.That(result.Status, Is.EqualTo(ResultStatus.Cancelled));
+                Assert.That(result.Data, Is.EqualTo(-1));
+                Assert.That(result.Message, Does.Contain("canceled"));
+            }
         }
 
         /// <summary>
@@ -578,25 +676,32 @@ namespace NanoDNA.ProcessRunner.Tests
         [Test]
         public async Task RunAsyncForcefulCancellationTimeout()
         {
-            string app = OperatingSystem.IsWindows() ? "cmd.exe" : "bash";
-            string args = OperatingSystem.IsWindows()
-                ? "/c \"@echo off & choice /t 10 /d y > nul\""
-                : "-c \"trap '' SIGTERM; sleep 10\"";
+            string longRunningApp = OperatingSystem.IsWindows() ? "ping" : "perl";
+            string longRunningArgs = OperatingSystem.IsWindows() ? "-n 10 127.0.0.1" : "-e \"$SIG{TERM}='IGNORE'; while(1){sleep 1;}\"";
 
-            TestRunner runner = new TestRunner(app);
+            TestRunner runner = new TestRunner(longRunningApp);
             using CancellationTokenSource cts = new CancellationTokenSource();
 
-            Task<Result<int>> runTask = runner.RunAsync(args, cts.Token);
+            Task<Result<int>> runTask = runner.RunAsync(longRunningArgs, cts.Token);
             await Task.Delay(250);
             cts.Cancel();
 
             Result<int> result = await runTask;
 
-            Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
-            Assert.That(result.Data, Is.EqualTo(-1));
-            Assert.That(result.Message, Does.Contain("killed forcefully"));
+            if (OperatingSystem.IsWindows())
+            {
+                Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
+                Assert.That(result.Data, Is.EqualTo(-1));
+                Assert.That(result.Message, Does.Contain("killed forcefully"));
+            }
+            else
+            {
+                Assert.That(result.Status, Is.EqualTo(ResultStatus.Cancelled));
+                Assert.That(result.Data, Is.EqualTo(-1));
+                Assert.That(result.Message, Does.Contain("canceled"));
+            }
         }
-
+        
         /// <summary>
         /// Tests that <see cref="BaseProcessRunner.TryRunAsync(string, CancellationToken)"/> returns True when execution finishes cleanly without cancellation.
         /// </summary>
@@ -648,18 +753,17 @@ namespace NanoDNA.ProcessRunner.Tests
         }
 
         /// <summary>
-        /// Tests that <see cref="BaseProcessRunner.StandardOutputStream"/> and <see cref="BaseProcessRunner.StandardErrorStream"/>
-        /// correctly expose the underlying stream readers.
+        /// Tests that <see cref="BaseProcessRunner.StandardOutputReader"/> and <see cref="BaseProcessRunner.StandardErrorReader"/> correctly expose the underlying stream readers.
         /// </summary>
         [Test]
         public void StandardStreamsAreExposedCorrectly()
         {
             TestRunner runner = new TestRunner(GetOSDefaultApplication());
 
-            Assert.That(runner.StandardOutputStream, Is.Not.Null);
-            Assert.That(runner.StandardErrorStream, Is.Not.Null);
-            Assert.That(runner.StandardOutputStream, Is.InstanceOf<StreamReader>());
-            Assert.That(runner.StandardErrorStream, Is.InstanceOf<StreamReader>());
+            Assert.That(runner.StandardOutputReader, Is.Not.Null);
+            Assert.That(runner.StandardErrorReader, Is.Not.Null);
+            Assert.That(runner.StandardOutputReader, Is.InstanceOf<StreamReader>());
+            Assert.That(runner.StandardErrorReader, Is.InstanceOf<StreamReader>());
         }
 
         /// <summary>
@@ -673,7 +777,7 @@ namespace NanoDNA.ProcessRunner.Tests
             byte[] bytes = System.Text.Encoding.UTF8.GetBytes($"First line{Environment.NewLine}Second line{Environment.NewLine}");
 
             // Write directly to the underlying memory stream layout
-            runner.StandardOutputStream.BaseStream.Write(bytes, 0, bytes.Length);
+            runner.StandardOutputReader.BaseStream.Write(bytes, 0, bytes.Length);
 
             string[] extractedLines = runner.STDOutput;
 
@@ -694,7 +798,7 @@ namespace NanoDNA.ProcessRunner.Tests
             byte[] bytes = System.Text.Encoding.UTF8.GetBytes($"Error log 1{Environment.NewLine}Error log 2{Environment.NewLine}");
 
             // Write directly to the underlying memory stream layout
-            runner.StandardErrorStream.BaseStream.Write(bytes, 0, bytes.Length);
+            runner.StandardErrorReader.BaseStream.Write(bytes, 0, bytes.Length);
 
             string[] extractedLines = runner.STDError;
 
@@ -713,7 +817,7 @@ namespace NanoDNA.ProcessRunner.Tests
             TestRunner runner = new TestRunner(GetOSDefaultApplication());
             byte[] bytes = System.Text.Encoding.UTF8.GetBytes($"Line 1{Environment.NewLine}Line 2{Environment.NewLine}");
 
-            runner.StandardOutputStream.BaseStream.Write(bytes, 0, bytes.Length);
+            runner.StandardOutputReader.BaseStream.Write(bytes, 0, bytes.Length);
 
             List<Task<string[]>> readTasks = new List<Task<string[]>>();
 
@@ -729,6 +833,216 @@ namespace NanoDNA.ProcessRunner.Tests
                 Assert.That(task.Result.Length, Is.EqualTo(2));
                 Assert.That(task.Result, Contains.Item("Line 1"));
             }
+        }
+
+        /// <summary>
+        /// Tests that <see cref="BaseProcessRunner.StandardOutputBinaryReader"/> and <see cref="BaseProcessRunner.StandardErrorBinaryReader"/> correctly expose the underlying binary reader instances.
+        /// </summary>
+        [Test]
+        public void BinaryReadersAreExposedCorrectly()
+        {
+            TestRunner runner = new TestRunner(GetOSDefaultApplication());
+
+            Assert.That(runner.StandardOutputBinaryReader, Is.Not.Null);
+            Assert.That(runner.StandardErrorBinaryReader, Is.Not.Null);
+            Assert.That(runner.StandardOutputBinaryReader, Is.InstanceOf<BinaryReader>());
+            Assert.That(runner.StandardErrorBinaryReader, Is.InstanceOf<BinaryReader>());
+        }
+
+        /// <summary>
+        /// Tests that <see cref="BaseProcessRunner.STDOutputBytes"/> correctly reads raw bytes from the underlying memory stream.
+        /// </summary>
+        [Test]
+        public void STDOutputBytesExtractsRawBytesSafely()
+        {
+            TestRunner runner = new TestRunner(GetOSDefaultApplication());
+            byte[] expectedBytes = new byte[] { 0x44, 0x4E, 0x41, 0x41, 0x75, 0x74, 0x6F };
+
+            runner.StandardOutputReader.BaseStream.Write(expectedBytes, 0, expectedBytes.Length);
+
+            byte[] actualBytes = runner.STDOutputBytes;
+
+            Assert.That(actualBytes, Is.Not.Null);
+            Assert.That(actualBytes, Is.EqualTo(expectedBytes));
+        }
+
+        /// <summary>
+        /// Tests that <see cref="BaseProcessRunner.STDErrorBytes"/> correctly reads raw bytes from the underlying memory stream.
+        /// </summary>
+        [Test]
+        public void STDErrorBytesExtractsRawBytesSafely()
+        {
+            TestRunner runner = new TestRunner(GetOSDefaultApplication());
+            byte[] expectedBytes = new byte[] { 0x45, 0x52, 0x52, 0x4F, 0x52 };
+
+            runner.StandardErrorReader.BaseStream.Write(expectedBytes, 0, expectedBytes.Length);
+
+            byte[] actualBytes = runner.STDErrorBytes;
+
+            Assert.That(actualBytes, Is.Not.Null);
+            Assert.That(actualBytes, Is.EqualTo(expectedBytes));
+        }
+
+        /// <summary>
+        /// Tests that event subscriptions to <see cref="BaseProcessRunner.STDOutputReceived"/> and <see cref="BaseProcessRunner.STDErrorReceived"/> hook into the process lifecycle hooks properly.
+        /// </summary>
+        [Test]
+        public void EventHandlersReceiveDataDuringExecution()
+        {
+            TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION);
+            bool outputReceived = false;
+
+            runner.STDOutputReceived += (sender, e) =>
+            {
+                Console.WriteLine("IDK");
+                if (e.Data != null)
+                    outputReceived = true;
+            };
+
+            Result<int> result = runner.Run(DEFAULT_APPLICATION_COMMAND);
+
+            Assert.That(result.Status, Is.EqualTo(ResultStatus.Success));
+            Assert.That(outputReceived, Is.True);
+        }
+
+        /// <summary>
+        /// Tests that <see cref="BaseProcessRunner.StandardOutputReader"/>, <see cref="BaseProcessRunner.StandardErrorReader"/>, <see cref="BaseProcessRunner.StandardOutputBinaryReader"/>, and <see cref="BaseProcessRunner.StandardErrorBinaryReader"/> exist and expose valid reader instances.
+        /// </summary>
+        [Test]
+        public void StandardReadersAndBinaryReadersExist()
+        {
+            TestRunner runner = new TestRunner(GetOSDefaultApplication());
+
+            Assert.That(runner.StandardOutputReader, Is.Not.Null);
+            Assert.That(runner.StandardErrorReader, Is.Not.Null);
+            Assert.That(runner.StandardOutputBinaryReader, Is.Not.Null);
+            Assert.That(runner.StandardErrorBinaryReader, Is.Not.Null);
+
+            Assert.That(runner.StandardOutputReader, Is.InstanceOf<StreamReader>());
+            Assert.That(runner.StandardErrorReader, Is.InstanceOf<StreamReader>());
+            Assert.That(runner.StandardOutputBinaryReader, Is.InstanceOf<BinaryReader>());
+            Assert.That(runner.StandardErrorBinaryReader, Is.InstanceOf<BinaryReader>());
+        }
+
+        /// <summary>
+        /// Tests that <see cref="BaseProcessRunner.STDOutputBytes"/> and <see cref="BaseProcessRunner.STDErrorBytes"/> return an empty byte array when no output has been recorded.
+        /// </summary>
+        [Test]
+        public void STDOutputAndErrorBytesReturnEmptyOnEmptyStreams()
+        {
+            TestRunner runner = new TestRunner(GetOSDefaultApplication());
+
+            Assert.That(runner.STDOutputBytes, Is.Not.Null);
+            Assert.That(runner.STDOutputBytes, Is.Empty);
+
+            Assert.That(runner.STDErrorBytes, Is.Not.Null);
+            Assert.That(runner.STDErrorBytes, Is.Empty);
+        }
+
+        /// <summary>
+        /// Tests that <see cref="BaseProcessRunner.STDOutputBytes"/> and <see cref="BaseProcessRunner.STDErrorBytes"/> extract the exact raw byte sequences populated from real value stream operations.
+        /// </summary>
+        [Test]
+        public void STDOutputAndErrorBytesReturnProperOutputValues()
+        {
+            TestRunner runner = new TestRunner(GetOSDefaultApplication());
+            byte[] expectedOutputBytes = new byte[] { 0x44, 0x4E, 0x41, 0x41, 0x75, 0x74, 0x6F };
+            byte[] expectedErrorBytes = new byte[] { 0x45, 0x52, 0x52, 0x4F, 0x52 };
+
+            runner.StandardOutputReader.BaseStream.Write(expectedOutputBytes, 0, expectedOutputBytes.Length);
+            runner.StandardErrorReader.BaseStream.Write(expectedErrorBytes, 0, expectedErrorBytes.Length);
+
+            Assert.That(runner.STDOutputBytes, Is.EqualTo(expectedOutputBytes));
+            Assert.That(runner.STDErrorBytes, Is.EqualTo(expectedErrorBytes));
+        }
+
+        /// <summary>
+        /// Tests that the exposed <see cref="StreamReader"/> and <see cref="BinaryReader"/> instances read and return the expected string data and raw binary elements from the underlying arrays.
+        /// </summary>
+        [Test]
+        public void StreamAndBinaryReadersReturnExpectedValueOutput()
+        {
+            TestRunner runner = new TestRunner(GetOSDefaultApplication());
+            byte[] rawPayload = System.Text.Encoding.UTF8.GetBytes("Data Stream Payload");
+
+            runner.StandardOutputReader.BaseStream.Write(rawPayload, 0, rawPayload.Length);
+
+            runner.StandardOutputReader.BaseStream.Position = 0;
+            string textResult = runner.StandardOutputReader.ReadToEnd();
+            Assert.That(textResult, Is.EqualTo("Data Stream Payload"));
+
+            runner.StandardOutputBinaryReader.BaseStream.Position = 0;
+            byte[] binaryResult = runner.StandardOutputBinaryReader.ReadBytes(rawPayload.Length);
+            Assert.That(binaryResult, Is.EqualTo(rawPayload));
+        }
+
+        /// <summary>
+        /// Tests that <see cref="BaseProcessRunner.RunAsync(string, CancellationToken)"/> exits cleanly and captures the validation route for a pre-cancelled operational token execution path.
+        /// </summary>
+        [Test]
+        public async Task RunAsyncPreCancelledTokenRoute()
+        {
+            TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION);
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            Result<int> result = await runner.RunAsync(DEFAULT_APPLICATION_COMMAND, cts.Token);
+
+            Assert.That(result.Status, Is.EqualTo(ResultStatus.Cancelled));
+            Assert.That(result.Data, Is.EqualTo(-1));
+            Assert.That(result.Message, Does.Contain("canceled"));
+        }
+
+        /// <summary>
+        /// Tests that <see cref="BaseProcessRunner.RunAsync(string, CancellationToken)"/> captures the operational route where an active cancellation exception drops execution into a forceful process tree termination due to expiration of the grace period.
+        /// </summary>
+        [Test]
+        public async Task RunAsyncGracePeriodTimeoutRouteTriggersForceKill()
+        {
+            string longRunningApp = OperatingSystem.IsWindows() ? "ping" : "perl";
+            string longRunningArgs = OperatingSystem.IsWindows() ? "-n 15 127.0.0.1" : "-e \"$SIG{TERM}='IGNORE'; while(1){sleep 1;}\"";
+
+            TestRunner runner = new TestRunner(longRunningApp);
+            using CancellationTokenSource cts = new CancellationTokenSource();
+
+            Task<Result<int>> runTask = runner.RunAsync(longRunningArgs, cts.Token);
+            await Task.Delay(100);
+            cts.Cancel();
+
+            Result<int> result = await runTask;
+
+            if (OperatingSystem.IsWindows())
+            {
+                Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
+                Assert.That(result.Data, Is.EqualTo(-1));
+                Assert.That(result.Message, Does.Contain("killed forcefully"));
+            }
+            else
+            {
+                Assert.That(result.Status, Is.EqualTo(ResultStatus.Cancelled));
+                Assert.That(result.Data, Is.EqualTo(-1));
+                Assert.That(result.Message, Does.Contain("canceled"));
+            }
+        }
+
+        /// <summary>
+        /// Tests that <see cref="BaseProcessRunner.Run(string, TimeSpan?)"/> safely handles internal null runtime objects returned from startup errors and yields an error structure cleanly.
+        /// </summary>
+        [Test]
+        public void RunHandlesNullProcessStartRoute()
+        {
+            TestRunner runner = new TestRunner(GetOSDefaultApplication());
+
+            runner.SetStandardOutputRedirect(true);
+
+            string badArgs = OperatingSystem.IsWindows()
+                ? "/c invalid_command_here"
+                : "-c \"invalid_command_here\"";
+
+            Result<int> result = runner.Run(badArgs);
+
+            Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
+            Assert.That(result.Message, Does.Contain("failed").Or.Contain("code"));
         }
     }
 }

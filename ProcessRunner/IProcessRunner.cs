@@ -1,8 +1,9 @@
-﻿using System.IO;
-using System.Threading;
+﻿using NanoDNA.AutomationResults;
+using System;
 using System.Diagnostics;
+using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
-using NanoDNA.AutomationResults;
 
 namespace NanoDNA.ProcessRunner
 {
@@ -36,15 +37,46 @@ namespace NanoDNA.ProcessRunner
         /// </summary>
         public string[] STDError { get; }
 
+
+        /// <summary>
+        /// Gets the standard output bytes from the executed process.
+        /// </summary>
+        public byte[] STDOutputBytes { get; }
+
+        /// <summary>
+        /// Gets the standard error bytes from the executed process.
+        /// </summary>
+        public byte[] STDErrorBytes { get; }
+
         /// <summary>
         /// Gets a StreamReader to read the standard output messages from the executed process.
         /// </summary>
-        public StreamReader StandardOutputStream { get; }
+        public StreamReader StandardOutputReader { get; }
 
         /// <summary>
         /// Gets a StreamReader to read the standard error messages from the executed process.
         /// </summary>
-        public StreamReader StandardErrorStream { get; }
+        public StreamReader StandardErrorReader { get; }
+
+        /// <summary>
+        /// Gets a BinaryReader to read the standard output bytes from the executed process.
+        /// </summary>
+        public BinaryReader StandardOutputBinaryReader { get; }
+
+        /// <summary>
+        /// Gets a BinaryReader to read the standard error bytes from the executed process.
+        /// </summary>
+        public BinaryReader StandardErrorBinaryReader { get; }
+
+        /// <summary>
+        /// Gets whether <see cref="STDOutput"/> is redirected to the console.
+        /// </summary>
+        public bool STDOutputRedirect { get; }
+
+        /// <summary>
+        /// Gets whether <see cref="STDError"/> is redirected to the console.
+        /// </summary>
+        public bool STDErrorRedirect { get; }
 
         /// <summary>
         /// Sets whether the standard output should be redirected to the console.
@@ -69,8 +101,9 @@ namespace NanoDNA.ProcessRunner
         /// Runs a process using the provided arguments and the current <see cref="StartInfo"/> configuration.
         /// </summary>
         /// <param name="args">Arguments for the process</param>
+        /// <param name="timeout">Optional Timespan to timeout the process</param>
         /// <returns>A <see cref="Result"/> containing the exit code, execution status and an optional message describing the outcome</returns>
-        public Result<int> Run(string args);
+        public Result<int> Run(string args, TimeSpan? timeout = null);
 
         /// <summary>
         /// Runs the process asynchronously using the provided arguments.
@@ -84,8 +117,9 @@ namespace NanoDNA.ProcessRunner
         /// Tries to run the process with the provided arguments and returns a boolean indicating success or failure.
         /// </summary>
         /// <param name="args">Arguments for the process</param>
+        /// <param name="timeout">Optional Timespan to timeout the process</param>
         /// <returns>True if the process succeeded, False otherwise</returns>
-        public bool TryRun(string args);
+        public bool TryRun(string args, TimeSpan? timeout = null);
 
         /// <summary>
         /// Tries to run the process asynchronously with the provided arguments and returns a boolean indicating success or failure.

@@ -135,7 +135,7 @@ namespace NanoDNA.ProcessRunner.Tests
         }
 
         /// <summary>
-        /// Tests the <see cref="CommandRunner.Run(string)"/> method to ensure it runs a command and returns the expected result.
+        /// Tests the <see cref="CommandRunner.Run(string, TimeSpan?)"/> method to ensure it runs a command and returns the expected result.
         /// </summary>
         /// <param name="application">Process Application Enum Instance</param>
         /// <param name="OS">Operating System to test on</param>
@@ -197,7 +197,7 @@ namespace NanoDNA.ProcessRunner.Tests
         }
 
         /// <summary>
-        /// Tests the <see cref="CommandRunner.TryRun(string)"/> method to ensure it runs a command and returns True for a successful invocation.
+        /// Tests the <see cref="CommandRunner.TryRun(string, TimeSpan?)"/> method to ensure it runs a command and returns True for a successful invocation.
         /// </summary>
         /// <param name="application">Process Application Enum Instance</param>
         /// <param name="OS">Operating System to test on</param>
