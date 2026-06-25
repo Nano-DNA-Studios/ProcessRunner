@@ -367,10 +367,9 @@ namespace NanoDNA.ProcessRunner
                 Task timeoutFallback = Task.Delay(2000);
 
                 Task completedTask = await Task.WhenAny(streamWaitTask, timeoutFallback).ConfigureAwait(false);
+
                 if (completedTask == timeoutFallback)
-                {
                     Logger.Warn("Stream synchronization tasks timed out during fallback termination.");
-                }
             }
             catch (Exception ex)
             {
@@ -395,6 +394,7 @@ namespace NanoDNA.ProcessRunner
                 }
 
                 List<Task> streamTasks = new List<Task>();
+
                 if (STDOutputRedirect)
                     streamTasks.Add(CreateWriterTask(process.StandardOutput.BaseStream, SaveSTDOutput, STDOutputReceived));
 
@@ -530,6 +530,8 @@ namespace NanoDNA.ProcessRunner
         /// <returns>Graceful cancellation task to be run</returns>
         private async Task CancelProcessGracefully(Process process)
         {
+            Logger.Trace("Cancelling the Process Gracefully");
+
             if (!OperatingSystem.IsWindows())
             {
                 Logger.Debug("Sending SIGTERM Signal");
