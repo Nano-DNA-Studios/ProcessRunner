@@ -302,9 +302,9 @@ namespace NanoDNA.ProcessRunner
 
         private void ParseAndInvokeLine(byte[] buffer, int count, StringBuilder lineBuilder, Action<string> onLineParsed)
         {
-            Logger.Info("Parsing and Invoking line");
-
             string textChunk = Encoding.UTF8.GetString(buffer, 0, count);
+
+            Logger.Trace($"Parsing and Invoking line");
 
             for (int i = 0; i < textChunk.Length; i++)
             {
@@ -316,26 +316,20 @@ namespace NanoDNA.ProcessRunner
                     lineBuilder.Clear();
                 }
                 else if (c == '\r')
-                {
+                    continue;
+                else
                     lineBuilder.Append(c);
-                }
             }
         }
 
         private DataReceivedEventArgs CreateEventArgs(string? lineData)
         {
-            Logger.Info("Creating Event Args for Invoke");
+            Logger.Trace("Creating Event Args for Invoke");
 
             object[] data = new object[0];
 
             if (!string.IsNullOrEmpty(lineData))
-            {
-                Logger.Info("Stuffed with something")
                 data = new object[] { lineData };
-            }
-               
-
-            Logger.Info($"Data is : {data[0].ToString()}");
 
             return (DataReceivedEventArgs)Activator.CreateInstance(
                 typeof(DataReceivedEventArgs),
