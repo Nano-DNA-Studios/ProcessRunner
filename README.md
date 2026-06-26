@@ -45,19 +45,19 @@ There are 4 native ways to run commands using the ProcessRunner library in each 
 
 ### Run
 ---
-Default run commands, will return a ``Result<int>``, the ``Result<int>`` class stores a optional ``Message``, a ``ResultStatus`` enum which indicating the processes result and in this case a ``int`` result in the ``Data`` property which is the Processes exit code.
+Default run commands, will return a `Result<int>`, the `Result<int>` class stores a optional `Message`, a `ResultStatus` enum which indicating the processes result and in this case a `int` result in the `Data` property which is the Processes exit code.
 
 ### RunAsync
 ---
-This is the same as the default ``Run`` command, but runs the command ``asynchronously``. This is useful for long-running commands or when you want to avoid blocking the main thread.
+This is the same as the default `Run` command, but runs the command `Asynchronously`. This is useful for long-running commands or when you want to avoid blocking the main thread.
 
 ### TryRun
 ---
-This is a "simplified" version of the default run command. It returns a ``Boolean`` that automatically indicates if the process was successful or not. This can be used for quick commands that don't require detailed error handling or output processing. It is useful for simple commands where you only care about success or failure.
+This is a "simplified" version of the default run command. It returns a `Boolean` that automatically indicates if the process was successful or not. This can be used for quick commands that don't require detailed error handling or output processing. It is useful for simple commands where you only care about success or failure.
 
 ### TryRunAsync
 ---
-This is the asynchronous version of the TryRun command. It returns a ``Boolean`` indicating if the process was successful or not, but it runs the command asynchronously. This is useful for long-running commands where you only care about success or failure without blocking the main thread.
+This is the asynchronous version of the TryRun command. It returns a `Boolean` indicating if the process was successful or not, but it runs the command asynchronously. This is useful for long-running commands where you only care about success or failure without blocking the main thread.
 
 
 ## Run Commands as a Process (Process Runner)
@@ -201,12 +201,12 @@ if (hasFfmpeg)
 ```
 
 ## Making your own Custom Runner
-You can create your own custom runner by inheriting from the ``BaseProcessRunner`` class. This allows you to customize the behavior of the runner, such as adding additional features or modifying the way commands are executed. All boilerplate is taken care of, allowing you to focus on custom execution logic or extra features.
+You can create your own custom runner by inheriting from the `BaseProcessRunner` class. This allows you to customize the behavior of the runner, such as adding additional features or modifying the way commands are executed. All boilerplate is taken care of, allowing you to focus on custom execution logic or extra features.
 
 # License
 Individuals can use the Library under the MIT License
 
-Groups and or Companies consisting of 5 or more people can Contact MrDNAlex through the email ``Mr.DNAlex.2003@gmail.com`` to License the Library for usage. 
+Groups and or Companies consisting of 5 or more people can Contact MrDNAlex through the email `Mr.DNAlex.2003@gmail.com` to License the Library for usage. 
 
 # Support
-For Additional Support, Contact MrDNAlex through the email : ``Mr.DNAlex.2003@gmail.com``.
+For Additional Support, Contact MrDNAlex through the email : `Mr.DNAlex.2003@gmail.com`.
