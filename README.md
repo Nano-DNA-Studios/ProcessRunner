@@ -45,11 +45,11 @@ There are 4 native ways to run commands using the ProcessRunner library in each 
 
 ### Run
 ---
-Default run commands, will return a ``Result<ProcessResult>``, the ``Result`` class stores a optional message and a Content object which is the ``ProcessResult`` class. The ``ProcessResult`` class contains a status from the Processes Execution, this is used to verify if it worked something went wrong, it also stores the exit code of the process.
+Default run commands, will return a ``Result<int>``, the ``Result<int>`` class stores a optional ``Message``, a ``ResultStatus`` enum which indicating the processes result and in this case a ``int`` result in the ``Data`` property which is the Processes exit code.
 
 ### RunAsync
 ---
-This is the same as the default run command, but it runs the command asynchronously. This is useful for long-running commands or when you want to avoid blocking the main thread.
+This is the same as the default ``Run`` command, but runs the command ``asynchronously``. This is useful for long-running commands or when you want to avoid blocking the main thread.
 
 ### TryRun
 ---
@@ -70,10 +70,10 @@ The following example shows how to run the `dotnet help` command using the Proce
 ProcessRunner processRunner = new ProcessRunner("dotnet");
 
 //Run the command and get the result
-Result<ProcessResult> result = processRunner.Run("help");
+Result<int> result = processRunner.Run("help");
 
 //Verify that the command was successful by checking the status or exit code
-if (result.Content.Status == ProcessStatus.Success || result.Content.ExitCode == 0)
+if (result.IsSuccessful || result.Status == ResultStatus.Success || result.Content.ExitCode == 0)
 {
 	Console.WriteLine("Successfully Ran \"dotnet help\"");
 
@@ -99,10 +99,10 @@ The following example shows how to run the `echo Hello World` command using the 
 CommandRunner commandRunner = new CommandRunner();
 
 //Run the command "echo Hello World"
-Result<ProcessResult> result = commandRunner.Run("echo Hello World");
+Result<int> result = commandRunner.Run("echo Hello World");
 
 //Verify that the command was successful by checking the status or exit code
-if (result.Content.Status == ProcessStatus.Success || result.Content.ExitCode == 0)
+if (result.IsSuccessful || result.Status == ResultStatus.Success || result.Content.ExitCode == 0)
 {
 	Console.WriteLine("Successfully Ran \"echo Hello World\"")
 	foreach (string line in commandRunner.STDOutput)
