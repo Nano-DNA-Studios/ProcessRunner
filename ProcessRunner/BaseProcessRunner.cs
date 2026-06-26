@@ -35,6 +35,14 @@ namespace NanoDNA.ProcessRunner
         /// </summary>
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
+        /// <summary>
+        /// Delegate function used to pass the <see cref="SaveSTDOutput(byte[], int, StringBuilder)"/> and <see cref="SaveSTDError(byte[], int, StringBuilder)"/> functions to the <see cref="CreateWriterTask(Stream, StreamChunkProcessor, DataReceivedEventHandler?)"/> function
+        /// </summary>
+        /// <param name="buffer">Buffer of bytes to write</param>
+        /// <param name="bytesRead">Number of bytes to write</param>
+        /// <param name="lineBuilder">The converted string line to construct from the bytes</param>
+        private delegate void StreamChunkProcessor(byte[] buffer, int bytesRead, StringBuilder lineBuilder);
+
         /// <inheritdoc />
         public string ApplicationName => StartInfo.FileName;
 
@@ -224,38 +232,148 @@ namespace NanoDNA.ProcessRunner
         }
 
         /// <summary>
-        /// Saves the standard output from the process internally.
+        /// Saves the Standard Output from the process internally and invokes the receiver
         /// </summary>
-        /// <param name="sender">Object sending the event</param>
-        /// <param name="data">Data received by the event</param>
-        protected void SaveSTDOutput(object sender, DataReceivedEventArgs data)
+        /// <param name="buffer">Buffer of bytes to write</param>
+        /// <param name="count">Number of bytes to write</param>
+        /// <param name="lineBuilder">The converted string line to construct from the bytes</param>
+        protected void SaveSTDOutput(byte[] buffer, int count, StringBuilder lineBuilder)
         {
-            string? output = data.Data;
-            if (output == null)
+            Logger.Trace("Saving Data to STD Output");
+
+            if (count <= 0)
                 return;
 
             lock (_outputLock)
             {
-                byte[] bytes = Encoding.UTF8.GetBytes(output + Environment.NewLine);
-                _stdOutput.Write(bytes, 0, bytes.Length);
+                _stdOutput.Write(buffer, 0, count);
             }
+
+            if (STDOutputReceived?.GetInvocationList().Length > 0)
+                ParseAndInvokeLine(buffer, count, lineBuilder, line => STDOutputReceived?.Invoke(this, CreateEventArgs(line)));
         }
 
         /// <summary>
-        /// Saves the standard error from the process internally.
+        /// Saves the Standard Error from the process internally and invokes the receiver
         /// </summary>
-        /// <param name="sender">Object sending the event</param>
-        /// <param name="data">Data received by the event</param>
-        protected void SaveSTDError(object sender, DataReceivedEventArgs data)
+        /// <param name="buffer">Buffer of bytes to write</param>
+        /// <param name="count">Number of bytes to write</param>
+        /// <param name="lineBuilder">The converted string line to construct from the bytes</param>
+        protected void SaveSTDError(byte[] buffer, int count, StringBuilder lineBuilder)
         {
-            string? output = data.Data;
-            if (output == null)
+            Logger.Trace("Saving Data to STD Error");
+
+            if (count <= 0)
                 return;
 
             lock (_errorLock)
             {
-                byte[] bytes = Encoding.UTF8.GetBytes(output + Environment.NewLine);
-                _stdError.Write(bytes, 0, bytes.Length);
+                _stdError.Write(buffer, 0, count);
+            }
+
+            if (STDErrorReceived?.GetInvocationList().Length > 0)
+                ParseAndInvokeLine(buffer, count, lineBuilder, line => STDErrorReceived?.Invoke(this, CreateEventArgs(line)));
+        }
+
+        /// <summary>
+        /// Parses a raw byte buffer chunk into text strings line-by-line, omitting carriage returns, and dispatches them to a parsing action upon encountering a newline character.
+        /// </summary>
+        /// <param name="buffer">The raw byte array chunk received from the process stream.</param>
+        /// <param name="count">The number of valid bytes to read from the buffer.</param>
+        /// <param name="lineBuilder">The persistent string builder instance used to store and aggregate incomplete text fragments across chunks.</param>
+        /// <param name="onLineParsed">The callback action to execute with the string data whenever a complete line is parsed.</param>
+        private void ParseAndInvokeLine(byte[] buffer, int count, StringBuilder lineBuilder, Action<string> onLineParsed)
+        {
+            Logger.Trace($"Parsing and Invoking line");
+
+            string textChunk = Encoding.UTF8.GetString(buffer, 0, count);
+
+            for (int i = 0; i < textChunk.Length; i++)
+            {
+                char c = textChunk[i];
+
+                if (c == '\n')
+                {
+                    onLineParsed(lineBuilder.ToString());
+                    lineBuilder.Clear();
+                }
+                else if (c == '\r')
+                    continue;
+                else
+                    lineBuilder.Append(c);
+            }
+        }
+
+        /// <summary>
+        /// Instantiates a new <see cref="DataReceivedEventArgs"/> instance by reflecting into its internal constructor to pass line data.
+        /// </summary>
+        /// <param name="lineData">The string data representing the parsed line to attach to the event arguments.</param>
+        /// <returns>A new non-null instance of <see cref="DataReceivedEventArgs"/> containing the line data.</returns>
+        private DataReceivedEventArgs CreateEventArgs(string? lineData)
+        {
+            Logger.Trace("Creating Event Args for Invoke");
+
+            object[] data = new object[0];
+
+            if (!string.IsNullOrEmpty(lineData))
+                data = new object[] { lineData };
+
+            return (DataReceivedEventArgs)Activator.CreateInstance(
+                typeof(DataReceivedEventArgs),
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance,
+                null,
+                data,
+                null
+            )!;
+        }
+
+        /// <summary>
+        /// Creates a new Task to read from the specified process stream, process chunks via a delegate, and invoke the associated data handler.
+        /// </summary>
+        /// <param name="stream">The source process stream to read data from.</param>
+        /// <param name="processor">The chunk processor delegate responsible for handling the byte buffer and updating the string builder state.</param>
+        /// <param name="handler">The data received event handler to invoke when a full line or remaining text block is parsed.</param>
+        /// <returns>A running Task instance that performs the asynchronous stream reading loop.</returns>
+        private Task CreateWriterTask(Stream stream, StreamChunkProcessor processor, DataReceivedEventHandler? handler)
+        {
+            Logger.Trace("Creating new Write task instance");
+
+            return Task.Run(async () =>
+            {
+                StringBuilder lineBuilder = new StringBuilder();
+                byte[] buffer = new byte[4096];
+                int bytesRead;
+
+                while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false)) > 0)
+                {
+                    processor.Invoke(buffer, bytesRead, lineBuilder);
+                }
+
+                if (lineBuilder.Length > 0 && handler?.GetInvocationList().Length > 0)
+                    handler?.Invoke(this, CreateEventArgs(lineBuilder.ToString()));
+            });
+        }
+
+        /// <summary>
+        /// Safely awaits background streaming tasks with a hard timeout to prevent deadlocks during abnormal process aborts.
+        /// </summary>
+        private async Task SafeAwaitStreamsAsync(List<Task> streamTasks)
+        {
+            Logger.Trace("Waiting for the Writer Streams");
+
+            try
+            {
+                Task streamWaitTask = Task.WhenAll(streamTasks);
+                Task timeoutFallback = Task.Delay(2000);
+
+                Task completedTask = await Task.WhenAny(streamWaitTask, timeoutFallback).ConfigureAwait(false);
+
+                if (completedTask == timeoutFallback)
+                    Logger.Warn("Stream synchronization tasks timed out during fallback termination.");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Error occurred wrapping up process stream threads.");
             }
         }
 
@@ -265,7 +383,7 @@ namespace NanoDNA.ProcessRunner
             string command = $"{ApplicationName} {args}";
             StartInfo.Arguments = args;
 
-            Logger.Info($"Running Command : {command}");
+            Logger.Debug($"Running Command : {command}");
 
             using (Process? process = Process.Start(StartInfo))
             {
@@ -275,16 +393,13 @@ namespace NanoDNA.ProcessRunner
                     return new Result<int>(ResultStatus.Error, FAILED_TO_RUN_EXIT_CODE, "Process is null");
                 }
 
-                process.OutputDataReceived += STDOutputReceived;
-                process.ErrorDataReceived += STDErrorReceived;
-                process.OutputDataReceived += (sender, data) => SaveSTDOutput(sender, data);
-                process.ErrorDataReceived += (sender, data) => SaveSTDError(sender, data);
+                List<Task> streamTasks = new List<Task>();
 
                 if (STDOutputRedirect)
-                    process.BeginOutputReadLine();
+                    streamTasks.Add(CreateWriterTask(process.StandardOutput.BaseStream, SaveSTDOutput, STDOutputReceived));
 
                 if (STDErrorRedirect)
-                    process.BeginErrorReadLine();
+                    streamTasks.Add(CreateWriterTask(process.StandardError.BaseStream, SaveSTDError, STDErrorReceived));
 
                 bool exited = true;
 
@@ -299,13 +414,17 @@ namespace NanoDNA.ProcessRunner
 
                     process.Kill(entireProcessTree: true);
                     process.WaitForExit();
+                    Task.WaitAll(SafeAwaitStreamsAsync(streamTasks));
 
                     return new Result<int>(ResultStatus.Cancelled, FAILED_TO_RUN_EXIT_CODE, $"Command timed out: {command}");
                 }
 
+                Task.WaitAll(SafeAwaitStreamsAsync(streamTasks));
+
                 if (process.ExitCode == 0)
                 {
-                    Logger.Info($"Successfully Ran Command : {command}");
+                    Task.WaitAll(streamTasks.ToArray());
+                    Logger.Debug($"Successfully Ran Command : {command}");
                     return new Result<int>(ResultStatus.Success, process.ExitCode, $"Command executed successfully: {command}");
                 }
 
@@ -323,7 +442,7 @@ namespace NanoDNA.ProcessRunner
             string command = $"{ApplicationName} {args}";
             StartInfo.Arguments = args;
 
-            Logger.Info($"Running Command : {command}");
+            Logger.Debug($"Running Command : {command}");
 
             using (Process? process = Process.Start(StartInfo))
             {
@@ -333,20 +452,18 @@ namespace NanoDNA.ProcessRunner
                     return new Result<int>(ResultStatus.Error, FAILED_TO_RUN_EXIT_CODE, "Process is null");
                 }
 
-                process.OutputDataReceived += STDOutputReceived;
-                process.ErrorDataReceived += STDErrorReceived;
-                process.OutputDataReceived += (sender, data) => SaveSTDOutput(sender, data);
-                process.ErrorDataReceived += (sender, data) => SaveSTDError(sender, data);
+                List<Task> streamTasks = new List<Task>();
 
                 if (STDOutputRedirect)
-                    process.BeginOutputReadLine();
+                    streamTasks.Add(CreateWriterTask(process.StandardOutput.BaseStream, SaveSTDOutput, STDOutputReceived));
 
                 if (STDErrorRedirect)
-                    process.BeginErrorReadLine();
+                    streamTasks.Add(CreateWriterTask(process.StandardError.BaseStream, SaveSTDError, STDErrorReceived));
 
                 try
                 {
                     await process.WaitForExitAsync(cancellationToken);
+                    await SafeAwaitStreamsAsync(streamTasks);
                 }
                 catch
                 {
@@ -363,22 +480,15 @@ namespace NanoDNA.ProcessRunner
                     bool graceCondition = completedKillTask == gracePeriodTask && !process.HasExited;
                     bool killErrorCondition = completedKillTask == killTask && killTask.Exception != null;
 
-                    if (graceCondition)
+                    if (graceCondition || killErrorCondition)
                     {
-                        Logger.Warn($"Process did not exit within the grace period. Force killing process tree: {command}");
+                        string condition = graceCondition ? "did not exit within the grace period" : "cancellation resulted in an error";
+
+                        Logger.Warn($"Process {condition}. Force killing process tree: {command}");
 
                         process.Kill(entireProcessTree: true);
                         await process.WaitForExitAsync(CancellationToken.None);
-
-                        return new Result<int>(ResultStatus.Error, FAILED_TO_RUN_EXIT_CODE, $"Command was canceled and was killed forcefully: {command}");
-                    }
-
-                    if (killErrorCondition)
-                    {
-                        Logger.Warn($"Process cancellation resulted in an error. Force killing process tree: {command}");
-
-                        process.Kill(entireProcessTree: true);
-                        await process.WaitForExitAsync(CancellationToken.None);
+                        await SafeAwaitStreamsAsync(streamTasks);
 
                         return new Result<int>(ResultStatus.Error, FAILED_TO_RUN_EXIT_CODE, $"Command was canceled and was killed forcefully: {command}");
                     }
@@ -388,7 +498,7 @@ namespace NanoDNA.ProcessRunner
 
                 if (process.ExitCode == 0)
                 {
-                    Logger.Info($"Successfully Ran Command : {command}");
+                    Logger.Debug($"Successfully Ran Command : {command}");
                     return new Result<int>(ResultStatus.Success, process.ExitCode, $"Command executed successfully: {command}");
                 }
 
@@ -420,9 +530,11 @@ namespace NanoDNA.ProcessRunner
         /// <returns>Graceful cancellation task to be run</returns>
         private async Task CancelProcessGracefully(Process process)
         {
+            Logger.Trace("Cancelling the Process Gracefully");
+
             if (!OperatingSystem.IsWindows())
             {
-                Logger.Info("Sending SIGTERM Signal");
+                Logger.Debug("Sending SIGTERM Signal");
 
                 ProcessStartInfo startInfo = new ProcessStartInfo()
                 {
@@ -448,7 +560,7 @@ namespace NanoDNA.ProcessRunner
                 return;
             }
 
-            Logger.Info("Sending Ctrl+C Command");
+            Logger.Debug("Sending Ctrl+C Command");
 
             process.StandardInput.WriteLine("\x3");
             process.StandardInput.Close();
