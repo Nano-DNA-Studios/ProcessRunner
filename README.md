@@ -45,19 +45,19 @@ There are 4 native ways to run commands using the ProcessRunner library in each 
 
 ### Run
 ---
-Default run commands, will return a ``Result<ProcessResult>``, the ``Result`` class stores a optional message and a Content object which is the ``ProcessResult`` class. The ``ProcessResult`` class contains a status from the Processes Execution, this is used to verify if it worked something went wrong, it also stores the exit code of the process.
+Default run commands, will return a `Result<int>`, the `Result<int>` class stores a optional `Message`, a `ResultStatus` enum which indicating the processes result and in this case a `int` result in the `Data` property which is the Processes exit code.
 
 ### RunAsync
 ---
-This is the same as the default run command, but it runs the command asynchronously. This is useful for long-running commands or when you want to avoid blocking the main thread.
+This is the same as the default `Run` command, but runs the command `Asynchronously`. This is useful for long-running commands or when you want to avoid blocking the main thread.
 
 ### TryRun
 ---
-This is a "simplified" version of the default run command. It returns a ``Boolean`` that automatically indicates if the process was successful or not. This can be used for quick commands that don't require detailed error handling or output processing. It is useful for simple commands where you only care about success or failure.
+This is a "simplified" version of the default run command. It returns a `Boolean` that automatically indicates if the process was successful or not. This can be used for quick commands that don't require detailed error handling or output processing. It is useful for simple commands where you only care about success or failure.
 
 ### TryRunAsync
 ---
-This is the asynchronous version of the TryRun command. It returns a ``Boolean`` indicating if the process was successful or not, but it runs the command asynchronously. This is useful for long-running commands where you only care about success or failure without blocking the main thread.
+This is the asynchronous version of the TryRun command. It returns a `Boolean` indicating if the process was successful or not, but it runs the command asynchronously. This is useful for long-running commands where you only care about success or failure without blocking the main thread.
 
 
 ## Run Commands as a Process (Process Runner)
@@ -70,10 +70,10 @@ The following example shows how to run the `dotnet help` command using the Proce
 ProcessRunner processRunner = new ProcessRunner("dotnet");
 
 //Run the command and get the result
-Result<ProcessResult> result = processRunner.Run("help");
+Result<int> result = processRunner.Run("help");
 
 //Verify that the command was successful by checking the status or exit code
-if (result.Content.Status == ProcessStatus.Success || result.Content.ExitCode == 0)
+if (result.IsSuccessful || result.Status == ResultStatus.Success || result.Data == 0)
 {
 	Console.WriteLine("Successfully Ran \"dotnet help\"");
 
@@ -99,10 +99,10 @@ The following example shows how to run the `echo Hello World` command using the 
 CommandRunner commandRunner = new CommandRunner();
 
 //Run the command "echo Hello World"
-Result<ProcessResult> result = commandRunner.Run("echo Hello World");
+Result<int> result = commandRunner.Run("echo Hello World");
 
 //Verify that the command was successful by checking the status or exit code
-if (result.Content.Status == ProcessStatus.Success || result.Content.ExitCode == 0)
+if (result.IsSuccessful || result.Status == ResultStatus.Success || result.Data == 0)
 {
 	Console.WriteLine("Successfully Ran \"echo Hello World\"")
 	foreach (string line in commandRunner.STDOutput)
@@ -116,13 +116,97 @@ if (result.Content.Status == ProcessStatus.Success || result.Content.ExitCode ==
 }}
 ```
 
+## Handling Timeouts and Cancellations
+---
+The library includes native support for stopping hanging processes or passing cancellation tokens to asynchronous executions.
+
+### Synchronous Execution with Timeout
+If a process runs longer than the specified `TimeSpan`, `ProcessRunner` will automatically force-kill the entire process tree and return a status of `ResultStatus.Cancelled`.
+
+```csharp
+ProcessRunner runner = new ProcessRunner("ping");
+
+// Run a command with a 5-second timeout limit
+Result<int> result = runner.Run("127.0.0.1 -n 10", TimeSpan.FromSeconds(5));
+
+if (result.IsCancelled || result.Status == ResultStatus.Cancelled || result.Data == -1)
+{
+    Console.WriteLine("The process hung and was safely terminated.");
+}
+```
+
+## Asynchronous Execution with CancellationToken
+You can pass a standard .NET CancellationToken to asynchronous tasks. The library attempts to send a graceful termination signal (SIGTERM on Linux/MacOS or a Ctrl+C emulation on Windows) before resorting to a forceful process tree termination.
+
+```csharp
+using CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+CommandRunner runner = new CommandRunner();
+
+Result<int> result = await runner.RunAsync("long-running-script.sh", cts.Token);
+
+if (result.IsCancelled || result.Status == ResultStatus.Cancelled || result.Data == -1)
+{
+	Console.WriteLine("The Process was cancelled by the user.");
+}
+```
+
+## Real-Time Data Capturing (Event Subscriptions)
+Instead of waiting for a process to complete to inspect `STDOutput` or `STDError`, you can subscribe to events to process lines in real-time as they are written to the stream by the underlying application.
+
+```csharp
+ProcessRunner runner = new ProcessRunner("dotnet");
+
+// Subscribe to real-time output line events
+runner.STDOutputReceived += (sender, args) =>
+{
+    if (!string.IsNullOrEmpty(args.Data))
+    {
+        Console.WriteLine($"[LIVE OUT] {args.Data}");
+    }
+};
+
+runner.STDErrorReceived += (sender, args) =>
+{
+    if (!string.IsNullOrEmpty(args.Data))
+    {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine($"[LIVE ERR] {args.Data}");
+        Console.ResetColor();
+    }
+};
+
+// Execute command while events capture ongoing text chunks
+await runner.RunAsync("watch test");
+```
+
+## Advanced Properties and Binary Stream Reading
+When working with standard output streams that emit raw byte arrays instead of text lines (such as image rendering, media transcoding, or file streaming binaries), you can access the underlying streams directly.
+
+### Exposed Binary Properties
+* `STDOutputBytes`: Returns a thread-safe `byte[]` array snapshot of the complete stdout memory stream.
+* `STDErrorBytes`: Returns a thread-safe `byte[]` array snapshot of the complete stderr memory stream.
+* `StandardOutputBinaryReader`: An active `BinaryReader` mapping straight to the internal standard output stream buffer.
+* `StandardErrorBinaryReader`: An active `BinaryReader` mapping straight to the internal standard error stream buffer.
+
+### Verification Tools
+You can check if an executable is present within the user's environment variable pathing before trying to invoke a runner profile:
+
+```csharp
+bool hasFfmpeg = BaseProcessRunner.IsApplicationAvailable("ffmpeg");
+
+if (hasFfmpeg)
+{
+    Console.WriteLine("FFmpeg environment path structure verified.");
+}
+```
+
 ## Making your own Custom Runner
-You can create your own custom runner by inheriting from the ``BaseProcessRunner`` class. This allows you to customize the behavior of the runner, such as adding additional features or modifying the way commands are executed. All boilerplate is taken care of, allowing you to focus on custom execution logic or extra features.
+You can create your own custom runner by inheriting from the `BaseProcessRunner` class. This allows you to customize the behavior of the runner, such as adding additional features or modifying the way commands are executed. All boilerplate is taken care of, allowing you to focus on custom execution logic or extra features.
 
 # License
 Individuals can use the Library under the MIT License
 
-Groups and or Companies consisting of 5 or more people can Contact MrDNAlex through the email ``Mr.DNAlex.2003@gmail.com`` to License the Library for usage. 
+Groups and or Companies consisting of 5 or more people can Contact MrDNAlex through the email `Mr.DNAlex.2003@gmail.com` to License the Library for usage. 
 
 # Support
-For Additional Support, Contact MrDNAlex through the email : ``Mr.DNAlex.2003@gmail.com``.
+For Additional Support, Contact MrDNAlex through the email : `Mr.DNAlex.2003@gmail.com`.
