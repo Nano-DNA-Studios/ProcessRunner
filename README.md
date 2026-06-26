@@ -73,7 +73,7 @@ ProcessRunner processRunner = new ProcessRunner("dotnet");
 Result<int> result = processRunner.Run("help");
 
 //Verify that the command was successful by checking the status or exit code
-if (result.IsSuccessful || result.Status == ResultStatus.Success || result.Content.ExitCode == 0)
+if (result.IsSuccessful || result.Status == ResultStatus.Success || result.Data == 0)
 {
 	Console.WriteLine("Successfully Ran \"dotnet help\"");
 
@@ -102,7 +102,7 @@ CommandRunner commandRunner = new CommandRunner();
 Result<int> result = commandRunner.Run("echo Hello World");
 
 //Verify that the command was successful by checking the status or exit code
-if (result.IsSuccessful || result.Status == ResultStatus.Success || result.Content.ExitCode == 0)
+if (result.IsSuccessful || result.Status == ResultStatus.Success || result.Data == 0)
 {
 	Console.WriteLine("Successfully Ran \"echo Hello World\"")
 	foreach (string line in commandRunner.STDOutput)
@@ -114,6 +114,90 @@ if (result.IsSuccessful || result.Status == ResultStatus.Success || result.Conte
 	Console.WriteLine("Failed to run \"echo Hello World\"");
 	Console.WriteLine(result.Content.Status);
 }}
+```
+
+## Handling Timeouts and Cancellations
+---
+The library includes native support for stopping hanging processes or passing cancellation tokens to asynchronous executions.
+
+### Synchronous Execution with Timeout
+If a process runs longer than the specified `TimeSpan`, `ProcessRunner` will automatically force-kill the entire process tree and return a status of `ResultStatus.Cancelled`.
+
+```csharp
+ProcessRunner runner = new ProcessRunner("ping");
+
+// Run a command with a 5-second timeout limit
+Result<int> result = runner.Run("127.0.0.1 -n 10", TimeSpan.FromSeconds(5));
+
+if (result.IsCancelled || result.Status == ResultStatus.Cancelled || result.Data == -1)
+{
+    Console.WriteLine("The process hung and was safely terminated.");
+}
+```
+
+## Asynchronous Execution with CancellationToken
+You can pass a standard .NET CancellationToken to asynchronous tasks. The library attempts to send a graceful termination signal (SIGTERM on Linux/MacOS or a Ctrl+C emulation on Windows) before resorting to a forceful process tree termination.
+
+```csharp
+using CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+CommandRunner runner = new CommandRunner();
+
+Result<int> result = await runner.RunAsync("long-running-script.sh", cts.Token);
+
+if (result.IsCancelled || result.Status == ResultStatus.Cancelled || result.Data == -1)
+{
+	Console.WriteLine("The Process was cancelled by the user.");
+}
+```
+
+## Real-Time Data Capturing (Event Subscriptions)
+Instead of waiting for a process to complete to inspect `STDOutput` or `STDError`, you can subscribe to events to process lines in real-time as they are written to the stream by the underlying application.
+
+```csharp
+ProcessRunner runner = new ProcessRunner("dotnet");
+
+// Subscribe to real-time output line events
+runner.STDOutputReceived += (sender, args) =>
+{
+    if (!string.IsNullOrEmpty(args.Data))
+    {
+        Console.WriteLine($"[LIVE OUT] {args.Data}");
+    }
+};
+
+runner.STDErrorReceived += (sender, args) =>
+{
+    if (!string.IsNullOrEmpty(args.Data))
+    {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine($"[LIVE ERR] {args.Data}");
+        Console.ResetColor();
+    }
+};
+
+// Execute command while events capture ongoing text chunks
+await runner.RunAsync("watch test");
+```
+
+## Advanced Properties and Binary Stream Reading
+When working with standard output streams that emit raw byte arrays instead of text lines (such as image rendering, media transcoding, or file streaming binaries), you can access the underlying streams directly.
+
+### Exposed Binary Properties
+* `STDOutputBytes`: Returns a thread-safe `byte[]` array snapshot of the complete stdout memory stream.
+* `STDErrorBytes`: Returns a thread-safe `byte[]` array snapshot of the complete stderr memory stream.
+* `StandardOutputBinaryReader`: An active `BinaryReader` mapping straight to the internal standard output stream buffer.
+* `StandardErrorBinaryReader`: An active `BinaryReader` mapping straight to the internal standard error stream buffer.
+
+### Verification Tools
+You can check if an executable is present within the user's environment variable pathing before trying to invoke a runner profile:
+
+```csharp
+bool hasFfmpeg = BaseProcessRunner.IsApplicationAvailable("ffmpeg");
+
+if (hasFfmpeg)
+{
+    Console.WriteLine("FFmpeg environment path structure verified.");
+}
 ```
 
 ## Making your own Custom Runner
