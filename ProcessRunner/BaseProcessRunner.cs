@@ -292,13 +292,14 @@ namespace NanoDNA.ProcessRunner
             {
                 char c = textChunk[i];
 
-                if (c == '\n')
+                if (c == '\n' || c == '\r')
                 {
+                    if (lineBuilder.Length == 0)
+                        continue;
+
                     onLineParsed(lineBuilder.ToString());
                     lineBuilder.Clear();
                 }
-                else if (c == '\r')
-                    continue;
                 else
                     lineBuilder.Append(c);
             }
