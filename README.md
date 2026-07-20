@@ -12,7 +12,7 @@ This library is used by Nano-DNA-Studios and MrDNAlex to create Controller/Manag
 - .NET 8 or Later
 
 # Installation / Download
-This Framework can be installed using NuGet, Downloading the Self-Contained DLL's or Cloning through GitHub
+This Framework can be installed using NuGet, Downloading the Self-Contained DLL's or Cloning through GitHub.
 
 ## Install from NuGet
 This library can be installed from the NuGet Package Manager, which is the recommended way to install it.
