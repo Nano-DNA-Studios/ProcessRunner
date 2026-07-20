@@ -12,7 +12,7 @@ This library is used by Nano-DNA-Studios and MrDNAlex to create Controller/Manag
 - .NET 8 or Later
 
 # Installation / Download
-This Framework can be installed using NuGet, Downloading the Self-Contained DLL's or Cloning through GitHub
+This Framework can be installed using NuGet, Downloading the Self-Contained DLL's or Cloning through GitHub.
 
 ## Install from NuGet
 This library can be installed from the NuGet Package Manager, which is the recommended way to install it.
@@ -204,7 +204,7 @@ if (hasFfmpeg)
 You can create your own custom runner by inheriting from the `BaseProcessRunner` class. This allows you to customize the behavior of the runner, such as adding additional features or modifying the way commands are executed. All boilerplate is taken care of, allowing you to focus on custom execution logic or extra features.
 
 # License
-Individuals can use the Library under the MIT License
+Individuals can use the Library under the MIT License.
 
 Groups and or Companies consisting of 5 or more people can Contact MrDNAlex through the email `Mr.DNAlex.2003@gmail.com` to License the Library for usage. 
 
