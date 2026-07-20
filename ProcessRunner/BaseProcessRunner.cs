@@ -10,6 +10,16 @@ using System.Collections.Generic;
 
 namespace NanoDNA.ProcessRunner
 {
+    public sealed class ProcessDataReceivedEventArgs : EventArgs
+    {
+        public string Data { get; }
+
+        public ProcessDataReceivedEventArgs(string data)
+        {
+            Data = data;
+        }
+    }
+
     /// <summary>
     /// Provides the base implementation for running system processes.
     /// </summary>
@@ -95,12 +105,12 @@ namespace NanoDNA.ProcessRunner
         /// <summary>
         /// Occurs when the standard output of the process receives data.
         /// </summary>
-        public event DataReceivedEventHandler? STDOutputReceived;
+        public event EventHandler<ProcessDataReceivedEventArgs>? STDOutputReceived;
 
         /// <summary>
         /// Occurs when the standard error of the process receives data.
         /// </summary>
-        public event DataReceivedEventHandler? STDErrorReceived;
+        public event EventHandler<ProcessDataReceivedEventArgs>? STDErrorReceived;
 
         /// <summary>
         /// Default constructore initializing a new Instance of the <see cref="BaseProcessRunner"/> class.
@@ -239,8 +249,6 @@ namespace NanoDNA.ProcessRunner
         /// <param name="lineBuilder">The converted string line to construct from the bytes</param>
         protected void SaveSTDOutput(byte[] buffer, int count, StringBuilder lineBuilder)
         {
-            Logger.Trace("Saving Data to STD Output");
-
             if (count <= 0)
                 return;
 
@@ -249,8 +257,8 @@ namespace NanoDNA.ProcessRunner
                 _stdOutput.Write(buffer, 0, count);
             }
 
-            if (STDOutputReceived?.GetInvocationList().Length > 0)
-                ParseAndInvokeLine(buffer, count, lineBuilder, line => STDOutputReceived?.Invoke(this, CreateEventArgs(line)));
+            if (STDOutputReceived != null)
+                ParseAndInvokeLine(buffer, count, lineBuilder, line => STDOutputReceived?.Invoke(this, new ProcessDataReceivedEventArgs(line)));
         }
 
         /// <summary>
@@ -261,8 +269,6 @@ namespace NanoDNA.ProcessRunner
         /// <param name="lineBuilder">The converted string line to construct from the bytes</param>
         protected void SaveSTDError(byte[] buffer, int count, StringBuilder lineBuilder)
         {
-            Logger.Trace("Saving Data to STD Error");
-
             if (count <= 0)
                 return;
 
@@ -271,8 +277,8 @@ namespace NanoDNA.ProcessRunner
                 _stdError.Write(buffer, 0, count);
             }
 
-            if (STDErrorReceived?.GetInvocationList().Length > 0)
-                ParseAndInvokeLine(buffer, count, lineBuilder, line => STDErrorReceived?.Invoke(this, CreateEventArgs(line)));
+            if (STDErrorReceived != null)
+                ParseAndInvokeLine(buffer, count, lineBuilder, line => STDErrorReceived?.Invoke(this, new ProcessDataReceivedEventArgs(line)));
         }
 
         /// <summary>
@@ -284,8 +290,6 @@ namespace NanoDNA.ProcessRunner
         /// <param name="onLineParsed">The callback action to execute with the string data whenever a complete line is parsed.</param>
         private void ParseAndInvokeLine(byte[] buffer, int count, StringBuilder lineBuilder, Action<string> onLineParsed)
         {
-            Logger.Trace($"Parsing and Invoking line");
-
             string textChunk = Encoding.UTF8.GetString(buffer, 0, count);
 
             for (int i = 0; i < textChunk.Length; i++)
@@ -335,24 +339,21 @@ namespace NanoDNA.ProcessRunner
         /// <param name="processor">The chunk processor delegate responsible for handling the byte buffer and updating the string builder state.</param>
         /// <param name="handler">The data received event handler to invoke when a full line or remaining text block is parsed.</param>
         /// <returns>A running Task instance that performs the asynchronous stream reading loop.</returns>
-        private Task CreateWriterTask(Stream stream, StreamChunkProcessor processor, DataReceivedEventHandler? handler)
+        private async Task CreateWriterTask(Stream stream, StreamChunkProcessor processor, EventHandler<ProcessDataReceivedEventArgs>? handler)
         {
             Logger.Trace("Creating new Write task instance");
 
-            return Task.Run(async () =>
+            StringBuilder lineBuilder = new StringBuilder();
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+
+            while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false)) > 0)
             {
-                StringBuilder lineBuilder = new StringBuilder();
-                byte[] buffer = new byte[4096];
-                int bytesRead;
+                processor.Invoke(buffer, bytesRead, lineBuilder);
+            }
 
-                while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false)) > 0)
-                {
-                    processor.Invoke(buffer, bytesRead, lineBuilder);
-                }
-
-                if (lineBuilder.Length > 0 && handler?.GetInvocationList().Length > 0)
-                    handler?.Invoke(this, CreateEventArgs(lineBuilder.ToString()));
-            });
+            if (lineBuilder.Length > 0 && handler != null)
+                handler?.Invoke(this, new ProcessDataReceivedEventArgs(lineBuilder.ToString()));
         }
 
         /// <summary>
