@@ -437,7 +437,7 @@ namespace NanoDNA.ProcessRunner
         }
 
         /// <inheritdoc/>
-        public virtual async Task<Result<int>> RunAsync(string args, CancellationToken cancellationToken = default)
+        public virtual async Task<Result<int>> RunAsync(string args, CancellationToken cancellationToken = default, bool gracefulExit = false)
         {
             Logger.Trace("Running RunAsync");
 
@@ -474,28 +474,29 @@ namespace NanoDNA.ProcessRunner
                     if (process.HasExited)
                         return new Result<int>(ResultStatus.Cancelled, FAILED_TO_RUN_EXIT_CODE, $"Command was canceled and has exited: {command}");
 
-                    Task gracePeriodTask = Task.Delay(5000);
-                    Task killTask = CancelProcessGracefully(process);
-
-                    Task completedKillTask = await Task.WhenAny(killTask, gracePeriodTask);
-
-                    bool graceCondition = completedKillTask == gracePeriodTask && !process.HasExited;
-                    bool killErrorCondition = completedKillTask == killTask && killTask.Exception != null;
-
-                    if (graceCondition || killErrorCondition)
+                    if (gracefulExit)
                     {
+                        Task gracePeriodTask = Task.Delay(5000);
+                        Task killTask = CancelProcessGracefully(process);
+
+                        Task completedKillTask = await Task.WhenAny(killTask, gracePeriodTask);
+
+
+                        if (completedKillTask == killTask && process.HasExited)
+                            return new Result<int>(ResultStatus.Cancelled, FAILED_TO_RUN_EXIT_CODE, $"Command was canceled and exited gracefully: {command}");
+
+                        bool graceCondition = completedKillTask == gracePeriodTask && !process.HasExited;
+
                         string condition = graceCondition ? "did not exit within the grace period" : "cancellation resulted in an error";
 
                         Logger.Warn($"Process {condition}. Force killing process tree: {command}");
-
-                        process.Kill(entireProcessTree: true);
-                        await process.WaitForExitAsync(CancellationToken.None);
-                        await SafeAwaitStreamsAsync(streamTasks);
-
-                        return new Result<int>(ResultStatus.Error, FAILED_TO_RUN_EXIT_CODE, $"Command was canceled and was killed forcefully: {command}");
                     }
 
-                    return new Result<int>(ResultStatus.Cancelled, FAILED_TO_RUN_EXIT_CODE, $"Command was canceled and exited gracefully: {command}");
+                    process.Kill(entireProcessTree: true);
+                    await process.WaitForExitAsync(CancellationToken.None);
+                    await SafeAwaitStreamsAsync(streamTasks);
+
+                    return new Result<int>(ResultStatus.Error, FAILED_TO_RUN_EXIT_CODE, $"Command was canceled and was killed forcefully: {command}");
                 }
 
                 if (process.ExitCode == 0)
@@ -518,10 +519,10 @@ namespace NanoDNA.ProcessRunner
         }
 
         /// <inheritdoc/>
-        public virtual async Task<bool> TryRunAsync(string args, CancellationToken cancellationToken = default)
+        public virtual async Task<bool> TryRunAsync(string args, CancellationToken cancellationToken = default, bool gracefulExit = false)
         {
             Logger.Trace("Running TryRunAsync");
-            Result<int> result = await this.RunAsync(args, cancellationToken);
+            Result<int> result = await this.RunAsync(args, cancellationToken, gracefulExit);
             return result.Status == ResultStatus.Success;
         }
 
