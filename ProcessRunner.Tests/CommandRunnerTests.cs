@@ -165,7 +165,7 @@ namespace NanoDNA.ProcessRunner.Tests
         }
 
         /// <summary>
-        /// Tests the <see cref="CommandRunner.RunAsync(string, CancellationToken)"/> method to ensure it runs a command asynchronously and returns the expected result.
+        /// Tests the <see cref="CommandRunner.RunAsync(string, CancellationToken, bool)"/> method to ensure it runs a command asynchronously and returns the expected result.
         /// </summary>
         /// <param name="application">Process Application Enum Instance</param>
         /// <param name="OS">Operating System to test on</param>
@@ -224,7 +224,7 @@ namespace NanoDNA.ProcessRunner.Tests
         }
 
         /// <summary>
-        /// Tests the <see cref="CommandRunner.TryRunAsync(string, CancellationToken)"/> method to ensure it runs a command asynchronously and returns True for a successful invocation.
+        /// Tests the <see cref="CommandRunner.TryRunAsync(string, CancellationToken, bool)"/> method to ensure it runs a command asynchronously and returns True for a successful invocation.
         /// </summary>
         /// <param name="application">Process Application Enum Instance</param>
         /// <param name="OS">Operating System to test on</param>
