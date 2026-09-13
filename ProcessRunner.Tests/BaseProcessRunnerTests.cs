@@ -603,11 +603,14 @@ namespace NanoDNA.ProcessRunner.Tests
         [Test]
         public async Task RunAsyncPreCancelledToken()
         {
-            TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION);
+            string longRunningApp = OperatingSystem.IsWindows() ? "cmd.exe" : "sleep";
+            string longRunningArgs = OperatingSystem.IsWindows() ? "/k" : "10";
+
+            TestRunner runner = new TestRunner(longRunningApp);
             using CancellationTokenSource cts = new CancellationTokenSource();
             cts.Cancel();
 
-            Result<int> result = await runner.RunAsync(DEFAULT_APPLICATION_COMMAND, cts.Token, gracefulExit: false);
+            Result<int> result = await runner.RunAsync(longRunningArgs, cts.Token, gracefulExit: false);
 
             Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
             Assert.That(result.Data, Is.EqualTo(-1));
@@ -685,7 +688,8 @@ namespace NanoDNA.ProcessRunner.Tests
                 Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
                 Assert.That(result.Data, Is.EqualTo(-1));
                 Assert.That(result.Message, Does.Contain("killed forcefully"));
-            } else
+            }
+            else
             {
                 Assert.That(result.Status, Is.EqualTo(ResultStatus.Cancelled));
                 Assert.That(result.Data, Is.EqualTo(-1));
@@ -715,7 +719,7 @@ namespace NanoDNA.ProcessRunner.Tests
             Assert.That(result.Data, Is.EqualTo(-1));
             Assert.That(result.Message, Does.Contain("killed forcefully"));
         }
-        
+
         /// <summary>
         /// Tests that <see cref="BaseProcessRunner.TryRunAsync(string, CancellationToken, bool)"/> returns True when execution finishes cleanly without cancellation.
         /// </summary>
@@ -1029,18 +1033,9 @@ namespace NanoDNA.ProcessRunner.Tests
 
             Result<int> result = await runTask;
 
-            if (OperatingSystem.IsWindows())
-            {
-                Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
-                Assert.That(result.Data, Is.EqualTo(-1));
-                Assert.That(result.Message, Does.Contain("killed forcefully"));
-            }
-            else
-            {
-                Assert.That(result.Status, Is.EqualTo(ResultStatus.Cancelled));
-                Assert.That(result.Data, Is.EqualTo(-1));
-                Assert.That(result.Message, Does.Contain("canceled"));
-            }
+            Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
+            Assert.That(result.Data, Is.EqualTo(-1));
+            Assert.That(result.Message, Does.Contain("killed forcefully"));
         }
 
         /// <summary>
