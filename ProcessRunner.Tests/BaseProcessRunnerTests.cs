@@ -644,7 +644,7 @@ namespace NanoDNA.ProcessRunner.Tests
         /// Tests that <see cref="BaseProcessRunner.RunAsync(string, CancellationToken, bool)"/> keeps the run active while a process handles a graceful termination signal.
         /// </summary>
         [Test]
-        public async Task RunAsyncGracefulCancellationWaitsForProcessToExit()
+        public async Task RunAsyncGracefulCancellationReturnsGracefulResult()
         {
             string gracefulApp = OperatingSystem.IsWindows() ? "cmd.exe" : "sleep";
             string gracefulArgs = OperatingSystem.IsWindows() ? "/k" : "10";
@@ -762,6 +762,27 @@ namespace NanoDNA.ProcessRunner.Tests
             using CancellationTokenSource cts = new CancellationTokenSource();
 
             Task<bool> runTask = runner.TryRunAsync(longRunningArgs, cts.Token, gracefulExit: false);
+            await Task.Delay(250);
+            cts.Cancel();
+
+            bool success = await runTask;
+
+            Assert.That(success, Is.False);
+        }
+
+        /// <summary>
+        /// Tests that <see cref="BaseProcessRunner.TryRunAsync(string, CancellationToken, bool)"/> returns False after gracefully cancelling a long-running process.
+        /// </summary>
+        [Test]
+        public async Task TryRunAsyncHandlesGracefulCancellation()
+        {
+            string longRunningArgs = OperatingSystem.IsWindows() ? "/k" : "10";
+            string longRunningApp = OperatingSystem.IsWindows() ? "cmd.exe" : "sleep";
+
+            TestRunner runner = new TestRunner(longRunningApp);
+            using CancellationTokenSource cts = new CancellationTokenSource();
+
+            Task<bool> runTask = runner.TryRunAsync(longRunningArgs, cts.Token, gracefulExit: true);
             await Task.Delay(250);
             cts.Cancel();
 
@@ -1004,11 +1025,14 @@ namespace NanoDNA.ProcessRunner.Tests
         [Test]
         public async Task RunAsyncPreCancelledTokenRoute()
         {
-            TestRunner runner = new TestRunner(DEFAULT_VALID_APPLICATION);
+            string longRunningApp = OperatingSystem.IsWindows() ? "cmd.exe" : "sleep";
+            string longRunningArgs = OperatingSystem.IsWindows() ? "/k" : "10";
+
+            TestRunner runner = new TestRunner(longRunningApp);
             using CancellationTokenSource cts = new CancellationTokenSource();
             cts.Cancel();
 
-            Result<int> result = await runner.RunAsync(DEFAULT_APPLICATION_COMMAND, cts.Token, gracefulExit: false);
+            Result<int> result = await runner.RunAsync(longRunningArgs, cts.Token, gracefulExit: false);
 
             Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
             Assert.That(result.Data, Is.EqualTo(-1));

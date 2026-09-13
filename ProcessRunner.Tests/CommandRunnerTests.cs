@@ -169,12 +169,17 @@ namespace NanoDNA.ProcessRunner.Tests
         /// </summary>
         /// <param name="application">Process Application Enum Instance</param>
         /// <param name="OS">Operating System to test on</param>
+        /// <param name="gracefulExit">Whether the process should be given an opportunity to exit gracefully.</param>
         [Test]
-        [TestCase(ProcessApplication.CMD, PlatformOperatingSystem.Windows)]
-        [TestCase(ProcessApplication.Bash, PlatformOperatingSystem.Unix)]
-        [TestCase(ProcessApplication.Sh, PlatformOperatingSystem.Unix)]
-        [TestCase(ProcessApplication.PowerShell, PlatformOperatingSystem.Windows)]
-        public async Task CommandRunnerRunAsync(ProcessApplication application, PlatformOperatingSystem OS)
+        [TestCase(ProcessApplication.CMD, PlatformOperatingSystem.Windows, false)]
+        [TestCase(ProcessApplication.Bash, PlatformOperatingSystem.Unix, false)]
+        [TestCase(ProcessApplication.Sh, PlatformOperatingSystem.Unix, false)]
+        [TestCase(ProcessApplication.PowerShell, PlatformOperatingSystem.Windows, false)]
+        [TestCase(ProcessApplication.CMD, PlatformOperatingSystem.Windows, true)]
+        [TestCase(ProcessApplication.Bash, PlatformOperatingSystem.Unix, true)]
+        [TestCase(ProcessApplication.Sh, PlatformOperatingSystem.Unix, true)]
+        [TestCase(ProcessApplication.PowerShell, PlatformOperatingSystem.Windows, true)]
+        public async Task CommandRunnerRunAsync(ProcessApplication application, PlatformOperatingSystem OS, bool gracefulExit)
         {
             if (!OnAppropriateOS(OS))
             {
@@ -184,7 +189,7 @@ namespace NanoDNA.ProcessRunner.Tests
 
             CommandRunner commandRunner = new CommandRunner(application);
 
-            Result<int> result = await commandRunner.RunAsync(DEFAULT_PROCESS_COMMAND);
+            Result<int> result = await commandRunner.RunAsync(DEFAULT_PROCESS_COMMAND, gracefulExit: gracefulExit);
 
             Assert.That(result, Is.Not.Null, "Command RunAsync Result should not be null");
             Assert.That(result.Data, Is.EqualTo(0), "Command RunAsync Result Data should be 0");
@@ -194,6 +199,40 @@ namespace NanoDNA.ProcessRunner.Tests
             
             string fullOutput = string.Join(" ", commandRunner.STDOutput);
             Assert.That(fullOutput, Is.EqualTo(DEFAULT_PROCESS_OUTPUT));
+        }
+
+        /// <summary>
+        /// Tests that <see cref="CommandRunner.RunAsync(string, CancellationToken, bool)"/> forwards graceful cancellation behavior to <see cref="BaseProcessRunner"/>.
+        /// </summary>
+        [Test]
+        [TestCase(false)]
+        [TestCase(true)]
+        public async Task CommandRunnerRunAsyncCancellation(bool gracefulExit)
+        {
+            string longRunningCommand = OperatingSystem.IsWindows() ? "ping -n 10 127.0.0.1" : "sleep 10";
+
+            CommandRunner commandRunner = new CommandRunner();
+            using CancellationTokenSource cts = new CancellationTokenSource();
+
+            Task<Result<int>> runTask = commandRunner.RunAsync(longRunningCommand, cts.Token, gracefulExit);
+            await Task.Delay(250);
+            cts.Cancel();
+
+            Result<int> result = await runTask;
+
+            Assert.That(result, Is.Not.Null, "Command RunAsync cancellation result should not be null");
+            Assert.That(result.Data, Is.EqualTo(-1), "Command RunAsync cancellation result data should be -1");
+
+            if (gracefulExit && !OperatingSystem.IsWindows())
+            {
+                Assert.That(result.Status, Is.EqualTo(ResultStatus.Cancelled));
+                Assert.That(result.Message, Does.Contain("exited gracefully"));
+            }
+            else
+            {
+                Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
+                Assert.That(result.Message, Does.Contain("killed forcefully"));
+            }
         }
 
         /// <summary>
@@ -228,12 +267,17 @@ namespace NanoDNA.ProcessRunner.Tests
         /// </summary>
         /// <param name="application">Process Application Enum Instance</param>
         /// <param name="OS">Operating System to test on</param>
+        /// <param name="gracefulExit">Whether the process should be given an opportunity to exit gracefully.</param>
         [Test]
-        [TestCase(ProcessApplication.CMD, PlatformOperatingSystem.Windows)]
-        [TestCase(ProcessApplication.Bash, PlatformOperatingSystem.Unix)]
-        [TestCase(ProcessApplication.Sh, PlatformOperatingSystem.Unix)]
-        [TestCase(ProcessApplication.PowerShell, PlatformOperatingSystem.Windows)]
-        public async Task CommandRunnerTryRunAsync(ProcessApplication application, PlatformOperatingSystem OS)
+        [TestCase(ProcessApplication.CMD, PlatformOperatingSystem.Windows, false)]
+        [TestCase(ProcessApplication.Bash, PlatformOperatingSystem.Unix, false)]
+        [TestCase(ProcessApplication.Sh, PlatformOperatingSystem.Unix, false)]
+        [TestCase(ProcessApplication.PowerShell, PlatformOperatingSystem.Windows, false)]
+        [TestCase(ProcessApplication.CMD, PlatformOperatingSystem.Windows, true)]
+        [TestCase(ProcessApplication.Bash, PlatformOperatingSystem.Unix, true)]
+        [TestCase(ProcessApplication.Sh, PlatformOperatingSystem.Unix, true)]
+        [TestCase(ProcessApplication.PowerShell, PlatformOperatingSystem.Windows, true)]
+        public async Task CommandRunnerTryRunAsync(ProcessApplication application, PlatformOperatingSystem OS, bool gracefulExit)
         {
             if (!OnAppropriateOS(OS))
             {
@@ -243,7 +287,7 @@ namespace NanoDNA.ProcessRunner.Tests
 
             CommandRunner commandRunner = new CommandRunner(application);
 
-            bool result = await commandRunner.TryRunAsync(DEFAULT_PROCESS_COMMAND);
+            bool result = await commandRunner.TryRunAsync(DEFAULT_PROCESS_COMMAND, gracefulExit: gracefulExit);
 
             Assert.That(result, Is.True, "TryRunAsync should return true for successful execution");
             Assert.That(commandRunner.STDOutput.Length, Is.GreaterThan(0), "STDOutput should not be empty");
