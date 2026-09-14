@@ -110,8 +110,9 @@ namespace NanoDNA.ProcessRunner
         /// </summary>
         /// <param name="args">Arguments for the process</param>
         /// <param name="cancellationToken">Cancellation Token used to cancel to the process before completion</param>
+        /// <param name="gracefulExit">Boolean flag to indicate if the process should be given a change to exit gracefully or if it should be killed instantly</param>
         /// <returns>An awaitable task with a result of <see cref="Result"/> containing the exit code, execution status and an optional message describing the outcome</returns>
-        public Task<Result<int>> RunAsync(string args, CancellationToken cancellationToken = default);
+        public Task<Result<int>> RunAsync(string args, CancellationToken cancellationToken = default, bool gracefulExit = false);
 
         /// <summary>
         /// Tries to run the process with the provided arguments and returns a boolean indicating success or failure.
@@ -126,8 +127,9 @@ namespace NanoDNA.ProcessRunner
         /// </summary>
         /// <param name="args">Arguments for the process</param>
         /// <param name="cancellationToken">Cancellation Token used to cancel to the process before completion</param>
+        /// <param name="gracefulExit">Boolean flag to indicate if the process should be given a change to exit gracefully or if it should be killed instantly</param>
         /// <returns>An awaitable task with a result of True if the process succeeded, False otherwise</returns>
-        public Task<bool> TryRunAsync(string args, CancellationToken cancellationToken = default);
+        public Task<bool> TryRunAsync(string args, CancellationToken cancellationToken = default, bool gracefulExit = false);
 
         /// <summary>
         /// Checks if the specified application is available on the system.

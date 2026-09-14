@@ -213,9 +213,9 @@ namespace NanoDNA.ProcessRunner
         }
 
         /// <inheritdoc/>
-        public override async Task<Result<int>> RunAsync(string args, CancellationToken cancellationToken = default)
+        public override async Task<Result<int>> RunAsync(string args, CancellationToken cancellationToken = default, bool gracefulExit = false)
         {
-            return await base.RunAsync(GetApplicationArguments(Application, args), cancellationToken);
+            return await base.RunAsync(GetApplicationArguments(Application, args), cancellationToken, gracefulExit);
         }
 
         /// <inheritdoc/>
@@ -226,10 +226,10 @@ namespace NanoDNA.ProcessRunner
         }
 
         /// <inheritdoc/>
-        public override async Task<bool> TryRunAsync(string args, CancellationToken cancellationToken = default)
+        public override async Task<bool> TryRunAsync(string args, CancellationToken cancellationToken = default, bool gracefulExit = false)
         {
             Logger.Trace("Running TryRunAsync");
-            Result<int> result = await this.RunAsync(args, cancellationToken);
+            Result<int> result = await this.RunAsync(args, cancellationToken, gracefulExit);
             return result.Status == ResultStatus.Success;
         }
     }
