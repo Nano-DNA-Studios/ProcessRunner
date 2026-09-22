@@ -635,9 +635,10 @@ namespace NanoDNA.ProcessRunner.Tests
 
             Result<int> result = await runTask;
 
-            Assert.That(result.Status, Is.EqualTo(ResultStatus.Cancelled));
-            Assert.That(result.Data, Is.EqualTo(-1));
-            Assert.That(result.Message, Does.Contain("canceled"));
+                Assert.That(result.Status, Is.EqualTo(ResultStatus.Cancelled));
+                Assert.That(result.Data, Is.EqualTo(-1));
+                Assert.That(result.Message, Does.Contain("canceled"));
+           
         }
 
         /// <summary>
