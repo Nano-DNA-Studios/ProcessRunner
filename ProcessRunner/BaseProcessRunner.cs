@@ -560,7 +560,7 @@ namespace NanoDNA.ProcessRunner
                     await killProcess.WaitForExitAsync();
                 }
 
-                //await process.WaitForExitAsync(CancellationToken.None);
+                await process.WaitForExitAsync(CancellationToken.None);
 
                 return;
             }
