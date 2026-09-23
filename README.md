@@ -17,7 +17,7 @@ This Framework can be installed using NuGet, Downloading the Self-Contained DLL'
 ## Install from NuGet
 This library can be installed from the NuGet Package Manager, which is the recommended way to install it.
 
-Alternatively, use the following command to install the Tool. Replace ``<version>`` with the appropriate version using ``0.0.0`` format.
+Alternatively, use the following command to install the Tool. Replace `<version>` with the appropriate version using `0.0.0` format.
 
 ```bash
 dotnet add package NanoDNA.ProcessRunner --version <version>
