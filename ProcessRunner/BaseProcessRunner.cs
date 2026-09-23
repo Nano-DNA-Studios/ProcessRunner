@@ -292,20 +292,20 @@ namespace NanoDNA.ProcessRunner
         {
             string textChunk = Encoding.UTF8.GetString(buffer, 0, count);
 
-            for (int i = 0; i < textChunk.Length; i++)
+            foreach (char c in textChunk)
             {
-                char c = textChunk[i];
-
-                if (c == '\n' || c == '\r')
+                if (c == '\n' || c == '\r' || c == '\b')
                 {
-                    if (lineBuilder.Length == 0)
-                        continue;
+                    if (lineBuilder.Length > 0)
+                    {
+                        onLineParsed(lineBuilder.ToString());
+                        lineBuilder.Clear();
+                    }
 
-                    onLineParsed(lineBuilder.ToString());
-                    lineBuilder.Clear();
+                    continue;
                 }
-                else
-                    lineBuilder.Append(c);
+
+                lineBuilder.Append(c);
             }
         }
 
@@ -559,6 +559,8 @@ namespace NanoDNA.ProcessRunner
 
                     await killProcess.WaitForExitAsync();
                 }
+
+                await process.WaitForExitAsync(CancellationToken.None);
 
                 return;
             }
