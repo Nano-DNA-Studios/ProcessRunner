@@ -669,7 +669,7 @@ namespace NanoDNA.ProcessRunner.Tests
         [Test]
         public async Task RunAsyncCancellationErrorFallback()
         {
-            string longRunningApp = OperatingSystem.IsWindows() ? "ping" : "sleep";
+            string longRunningApp = OperatingSystem.IsWindows() ? "ping" : "perl";
             string longRunningArgs = OperatingSystem.IsWindows() ? "-n 10 127.0.0.1" : "-e \"$SIG{TERM}='IGNORE'; while(1){sleep 1;}\"";
 
             TestRunner runner = new TestRunner(longRunningApp);
