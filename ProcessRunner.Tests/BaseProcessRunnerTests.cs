@@ -682,9 +682,18 @@ namespace NanoDNA.ProcessRunner.Tests
             cts.Cancel();
 
             Result<int> result = await runTask;
-            Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
-            Assert.That(result.Data, Is.EqualTo(-1));
-            Assert.That(result.Message, Does.Contain("killed forcefully"));
+            if (OperatingSystem.IsWindows())
+            {
+                Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
+                Assert.That(result.Data, Is.EqualTo(-1));
+                Assert.That(result.Message, Does.Contain("killed forcefully"));
+            }
+            else
+            {
+                Assert.That(result.Status, Is.EqualTo(ResultStatus.Cancelled));
+                Assert.That(result.Data, Is.EqualTo(-1));
+                Assert.That(result.Message, Does.Contain("canceled"));
+            }
 
         }
 
