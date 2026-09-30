@@ -1,12 +1,13 @@
-﻿using NLog;
+﻿using NanoDNA.AutomationResults;
+using NLog;
 using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Threading;
-using System.Diagnostics;
 using System.Threading.Tasks;
-using NanoDNA.AutomationResults;
-using System.Collections.Generic;
 
 namespace NanoDNA.ProcessRunner
 {
@@ -535,6 +536,9 @@ namespace NanoDNA.ProcessRunner
         {
             Logger.Trace("Cancelling the Process Gracefully");
 
+            if (process.HasExited)
+                return;
+
             if (!OperatingSystem.IsWindows())
             {
                 Logger.Debug("Sending SIGTERM Signal");
@@ -559,18 +563,16 @@ namespace NanoDNA.ProcessRunner
 
                     await killProcess.WaitForExitAsync();
                 }
+            }
+            else
+            {
+                Logger.Debug("Sending Ctrl+C Command");
 
-                await process.WaitForExitAsync(CancellationToken.None);
-
-                return;
+                process.StandardInput.WriteLine("\x3\x3\x3");
+                process.StandardInput.Close();
             }
 
-            Logger.Debug("Sending Ctrl+C Command");
-
-            process.StandardInput.WriteLine("\x3");
-            process.StandardInput.Close();
-
-            await process.WaitForExitAsync();
+            await process.WaitForExitAsync(CancellationToken.None);
         }
 
         /// <summary>
