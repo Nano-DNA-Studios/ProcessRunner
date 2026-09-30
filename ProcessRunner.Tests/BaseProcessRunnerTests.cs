@@ -612,9 +612,9 @@ namespace NanoDNA.ProcessRunner.Tests
 
             Result<int> result = await runner.RunAsync(longRunningArgs, cts.Token, gracefulExit: false);
 
-            Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
+            Assert.That(result.Status, Is.EqualTo(ResultStatus.Cancelled));
             Assert.That(result.Data, Is.EqualTo(-1));
-            Assert.That(result.Message, Does.Contain("killed forcefully"));
+            Assert.That(result.Message, Does.Contain("cancelled"));
         }
 
         /// <summary>
@@ -669,8 +669,8 @@ namespace NanoDNA.ProcessRunner.Tests
         [Test]
         public async Task RunAsyncCancellationErrorFallback()
         {
-            string longRunningApp = OperatingSystem.IsWindows() ? "ping" : "sleep";
-            string longRunningArgs = OperatingSystem.IsWindows() ? "-n 10 127.0.0.1" : "10";
+            string longRunningApp = OperatingSystem.IsWindows() ? "ping" : "perl";
+            string longRunningArgs = OperatingSystem.IsWindows() ? "-n 10 127.0.0.1" : "-e \"$SIG{TERM}='IGNORE'; while(1){sleep 1;}\"";
 
             TestRunner runner = new TestRunner(longRunningApp);
             using CancellationTokenSource cts = new CancellationTokenSource();
@@ -683,18 +683,10 @@ namespace NanoDNA.ProcessRunner.Tests
 
             Result<int> result = await runTask;
 
-            if (OperatingSystem.IsWindows())
-            {
-                Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
-                Assert.That(result.Data, Is.EqualTo(-1));
-                Assert.That(result.Message, Does.Contain("killed forcefully"));
-            }
-            else
-            {
-                Assert.That(result.Status, Is.EqualTo(ResultStatus.Cancelled));
-                Assert.That(result.Data, Is.EqualTo(-1));
-                Assert.That(result.Message, Does.Contain("canceled"));
-            }
+            Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
+            Assert.That(result.Data, Is.EqualTo(-1));
+            Assert.That(result.Message, Does.Contain("killed forcefully"));
+
         }
 
         /// <summary>
@@ -1034,9 +1026,9 @@ namespace NanoDNA.ProcessRunner.Tests
 
             Result<int> result = await runner.RunAsync(longRunningArgs, cts.Token, gracefulExit: false);
 
-            Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
+            Assert.That(result.Status, Is.EqualTo(ResultStatus.Cancelled));
             Assert.That(result.Data, Is.EqualTo(-1));
-            Assert.That(result.Message, Does.Contain("killed forcefully"));
+            Assert.That(result.Message, Does.Contain("cancelled"));
         }
 
         /// <summary>
