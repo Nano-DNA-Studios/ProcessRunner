@@ -612,9 +612,9 @@ namespace NanoDNA.ProcessRunner.Tests
 
             Result<int> result = await runner.RunAsync(longRunningArgs, cts.Token, gracefulExit: false);
 
-            Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
+            Assert.That(result.Status, Is.EqualTo(ResultStatus.Cancelled));
             Assert.That(result.Data, Is.EqualTo(-1));
-            Assert.That(result.Message, Does.Contain("killed forcefully"));
+            Assert.That(result.Message, Does.Contain("cancelled"));
         }
 
         /// <summary>
@@ -1026,9 +1026,9 @@ namespace NanoDNA.ProcessRunner.Tests
 
             Result<int> result = await runner.RunAsync(longRunningArgs, cts.Token, gracefulExit: false);
 
-            Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
+            Assert.That(result.Status, Is.EqualTo(ResultStatus.Cancelled));
             Assert.That(result.Data, Is.EqualTo(-1));
-            Assert.That(result.Message, Does.Contain("killed forcefully"));
+            Assert.That(result.Message, Does.Contain("cancelled"));
         }
 
         /// <summary>

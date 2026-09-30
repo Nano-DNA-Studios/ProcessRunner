@@ -445,6 +445,13 @@ namespace NanoDNA.ProcessRunner
             string command = $"{ApplicationName} {args}";
             StartInfo.Arguments = args;
 
+            if (cancellationToken.IsCancellationRequested)
+            {
+                Logger.Warn($"Cancellation requested before starting command: {command}");
+
+                return new Result<int>(ResultStatus.Cancelled, FAILED_TO_RUN_EXIT_CODE, $"Command was cancelled before starting: {command}");
+            }
+
             Logger.Debug($"Running Command : {command}");
 
             using (Process? process = Process.Start(StartInfo))
